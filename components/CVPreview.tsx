@@ -41,7 +41,7 @@ const CV_PRINT_CLASSES = [
 
 /**
  * CVPreview component renders a high-fidelity, real-time preview of the CV.
- * It supports multiple templates (Classic, Modern, Minimalist, Creative),
+ * It supports multiple templates (Classic, Modern, Minimalist, Creative, Executive, Editorial, Technical),
  * customizable accent colors, and custom fonts.
  * Optimized for screen rendering and paper printing.
  * 
@@ -207,7 +207,94 @@ export default function CVPreview({ data }: CVPreviewProps) {
   }
 
   // ==========================================
-  // TEMPLATE 2: MODERN SPLIT (2-Column Sidebar)
+  // TEMPLATE 2: CLASSIC ATS (Plain & Parser-Friendly)
+  // ==========================================
+  if (template === 'classic-ats') {
+    return (
+      <div
+        id="cv-printable-area"
+        className={`bg-white dark:bg-gray-800 p-9 min-h-[842px] w-full text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-800 transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
+      >
+        <header className="border-b border-gray-300 pb-3">
+          <h1 className="text-2xl font-bold text-gray-950 dark:text-gray-100">
+            {personalInfo.name || 'Your Name'}
+          </h1>
+          <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
+            {personalInfo.title || 'Professional Title'}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-600 dark:text-gray-400">
+            {personalInfo.email && <span>{personalInfo.email}</span>}
+            {personalInfo.phone && <span>{personalInfo.phone}</span>}
+            {personalInfo.location && <span>{personalInfo.location}</span>}
+          </div>
+        </header>
+
+        {personalInfo.summary && (
+          <section className="mt-5">
+            <h2 className="mb-2 border-b border-gray-200 pb-1 text-[12px] font-bold uppercase text-gray-900 dark:text-gray-100">
+              Professional Summary
+            </h2>
+            <p className="text-[12px] leading-relaxed text-gray-800 dark:text-gray-200">
+              {personalInfo.summary}
+            </p>
+          </section>
+        )}
+
+        {experience.length > 0 && (
+          <section className="mt-5">
+            <h2 className="mb-3 border-b border-gray-200 pb-1 text-[12px] font-bold uppercase text-gray-900 dark:text-gray-100">
+              Experience
+            </h2>
+            <div className="space-y-4">
+              {experience.map((exp) => (
+                <div key={exp.id}>
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between">
+                    <h3 className="text-[13px] font-bold text-gray-950 dark:text-gray-100">{exp.role || 'Position Title'}</h3>
+                    <span className="text-[11px] text-gray-600 dark:text-gray-400">{exp.startDate} - {exp.endDate}</span>
+                  </div>
+                  <p className="mb-1 text-[12px] font-semibold text-gray-800 dark:text-gray-200">{exp.company || 'Company'}</p>
+                  {renderDescription(exp.description)}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {education.length > 0 && (
+          <section className="mt-5">
+            <h2 className="mb-3 border-b border-gray-200 pb-1 text-[12px] font-bold uppercase text-gray-900 dark:text-gray-100">
+              Education
+            </h2>
+            <div className="space-y-2">
+              {education.map((edu) => (
+                <div key={edu.id} className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between">
+                  <div>
+                    <h3 className="text-[12px] font-bold text-gray-950 dark:text-gray-100">{edu.school || 'School'}</h3>
+                    <p className="text-[12px] text-gray-700 dark:text-gray-300">{edu.degree || 'Degree'}</p>
+                  </div>
+                  <span className="text-[11px] text-gray-600 dark:text-gray-400">{edu.year}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {skills.length > 0 && (
+          <section className="mt-5">
+            <h2 className="mb-2 border-b border-gray-200 pb-1 text-[12px] font-bold uppercase text-gray-900 dark:text-gray-100">
+              Skills
+            </h2>
+            <p className="text-[12px] leading-relaxed text-gray-800 dark:text-gray-200">
+              {skills.join(', ')}
+            </p>
+          </section>
+        )}
+      </div>
+    )
+  }
+
+  // ==========================================
+  // TEMPLATE 3: MODERN SPLIT (2-Column Sidebar)
   // ==========================================
   if (template === 'modern') {
     return (
@@ -436,7 +523,246 @@ export default function CVPreview({ data }: CVPreviewProps) {
   }
 
   // ==========================================
-  // TEMPLATE 4: CREATIVE (Header Banner)
+  // TEMPLATE 4: EXECUTIVE BRIEF (Premium & Formal)
+  // ==========================================
+  if (template === 'executive') {
+    return (
+      <div
+        id="cv-printable-area"
+        className={`bg-white dark:bg-gray-800 min-h-[842px] w-full text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
+      >
+        <div className="p-9 pb-6 border-b-[6px]" style={{ borderColor: accentColor }}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase text-gray-400">Executive Curriculum Vitae</p>
+              <h1 className="mt-1 text-3xl font-black uppercase text-gray-950 dark:text-gray-100">
+                {personalInfo.name || 'Your Name'}
+              </h1>
+              <p className="mt-1 text-sm font-bold uppercase" style={{ color: accentColor }}>
+                {personalInfo.title || 'Professional Title'}
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 text-[11px] text-gray-500 dark:text-gray-400 sm:text-right">
+              {personalInfo.email && <span>{personalInfo.email}</span>}
+              {personalInfo.phone && <span>{personalInfo.phone}</span>}
+              {personalInfo.location && <span>{personalInfo.location}</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-7 p-9 md:grid-cols-[1fr_170px]">
+          <div className="space-y-6">
+            {personalInfo.summary && (
+              <section>
+                <h2 className="mb-2 text-[11px] font-black uppercase text-gray-400">Leadership Profile</h2>
+                <p className="text-[12px] leading-relaxed text-gray-700 dark:text-gray-300">{personalInfo.summary}</p>
+              </section>
+            )}
+
+            {experience.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-[11px] font-black uppercase text-gray-400">Executive Experience</h2>
+                <div className="space-y-4">
+                  {experience.map((exp) => (
+                    <div key={exp.id} className="border-t pt-3 border-gray-100 dark:border-gray-700">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h3 className="text-[13px] font-black text-gray-950 dark:text-gray-100">{exp.role || 'Position Title'}</h3>
+                        <span className="shrink-0 text-[10px] font-bold text-gray-400">{exp.startDate} - {exp.endDate}</span>
+                      </div>
+                      <p className="mb-1.5 text-[11px] font-bold uppercase" style={{ color: accentColor }}>{exp.company || 'Company'}</p>
+                      {renderDescription(exp.description)}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+
+          <aside className="space-y-5 border-l border-gray-100 pl-5 dark:border-gray-700">
+            {skills.length > 0 && (
+              <section>
+                <h2 className="mb-2 text-[10px] font-black uppercase text-gray-400">Core Strengths</h2>
+                <div className="flex flex-col gap-1.5">
+                  {skills.map((skill) => (
+                    <span key={skill} className="text-[10.5px] font-bold text-gray-700 dark:text-gray-300">{skill}</span>
+                  ))}
+                </div>
+              </section>
+            )}
+            {education.length > 0 && (
+              <section>
+                <h2 className="mb-2 text-[10px] font-black uppercase text-gray-400">Education</h2>
+                <div className="space-y-3">
+                  {education.map((edu) => (
+                    <div key={edu.id}>
+                      <h3 className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{edu.school || 'School'}</h3>
+                      <p className="text-[10.5px] text-gray-500">{edu.degree || 'Degree'}</p>
+                      <p className="text-[10px] font-bold" style={{ color: accentColor }}>{edu.year}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </aside>
+        </div>
+      </div>
+    )
+  }
+
+  // ==========================================
+  // TEMPLATE 5: EDITORIAL PROFILE (Magazine Inspired)
+  // ==========================================
+  if (template === 'editorial') {
+    return (
+      <div
+        id="cv-printable-area"
+        className={`bg-white dark:bg-gray-800 min-h-[842px] w-full text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-[210px_1fr]">
+          <div className="p-8 text-white" style={{ backgroundColor: accentColor }}>
+            <h1 className="text-3xl font-black leading-none uppercase">{personalInfo.name || 'Your Name'}</h1>
+            <p className="mt-4 text-[11px] font-bold uppercase opacity-85">{personalInfo.title || 'Professional Title'}</p>
+            <div className="mt-7 space-y-2 border-t border-white/25 pt-4 text-[10.5px] opacity-90">
+              {personalInfo.email && <p className="break-all">{personalInfo.email}</p>}
+              {personalInfo.phone && <p>{personalInfo.phone}</p>}
+              {personalInfo.location && <p>{personalInfo.location}</p>}
+            </div>
+          </div>
+
+          <div className="p-8 space-y-6">
+            {personalInfo.summary && (
+              <section>
+                <h2 className="mb-2 text-[10px] font-black uppercase text-gray-400">Profile</h2>
+                <p className="text-[13px] leading-relaxed text-gray-700 dark:text-gray-300">{personalInfo.summary}</p>
+              </section>
+            )}
+
+            {experience.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-[10px] font-black uppercase text-gray-400">Work</h2>
+                <div className="space-y-4">
+                  {experience.map((exp) => (
+                    <div key={exp.id} className="grid grid-cols-1 gap-1 border-b border-gray-100 pb-4 last:border-0 md:grid-cols-[95px_1fr] dark:border-gray-700">
+                      <span className="text-[10px] font-bold uppercase text-gray-400">{exp.startDate} - {exp.endDate}</span>
+                      <div>
+                        <h3 className="text-[13px] font-black text-gray-950 dark:text-gray-100">{exp.role || 'Position'}</h3>
+                        <p className="mb-1.5 text-[11px] font-bold" style={{ color: accentColor }}>{exp.company || 'Company'}</p>
+                        {renderDescription(exp.description)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              {education.length > 0 && (
+                <section>
+                  <h2 className="mb-2 text-[10px] font-black uppercase text-gray-400">Education</h2>
+                  <div className="space-y-2">
+                    {education.map((edu) => (
+                      <div key={edu.id}>
+                        <h3 className="text-[11.5px] font-bold text-gray-900 dark:text-gray-100">{edu.school || 'School'}</h3>
+                        <p className="text-[10.5px] text-gray-500">{edu.degree || 'Degree'} {edu.year && `- ${edu.year}`}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {skills.length > 0 && (
+                <section>
+                  <h2 className="mb-2 text-[10px] font-black uppercase text-gray-400">Skills</h2>
+                  <p className="text-[11px] leading-relaxed text-gray-600 dark:text-gray-400">{skills.join(' / ')}</p>
+                </section>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ==========================================
+  // TEMPLATE 6: TECHNICAL MATRIX (Dense & Skills-Forward)
+  // ==========================================
+  if (template === 'technical') {
+    return (
+      <div
+        id="cv-printable-area"
+        className={`bg-white dark:bg-gray-800 p-8 min-h-[842px] w-full text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
+      >
+        <header className="border-b-2 pb-4" style={{ borderColor: accentColor }}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-black text-gray-950 dark:text-gray-100">{personalInfo.name || 'Your Name'}</h1>
+              <p className="text-[12px] font-bold" style={{ color: accentColor }}>{personalInfo.title || 'Professional Title'}</p>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-gray-500 dark:text-gray-400 sm:justify-end">
+              {personalInfo.email && <span>{personalInfo.email}</span>}
+              {personalInfo.phone && <span>{personalInfo.phone}</span>}
+              {personalInfo.location && <span>{personalInfo.location}</span>}
+            </div>
+          </div>
+        </header>
+
+        {skills.length > 0 && (
+          <section className="mt-5 rounded border border-gray-100 p-3 dark:border-gray-700">
+            <h2 className="mb-2 text-[10px] font-black uppercase text-gray-400">Technical Matrix</h2>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+              {skills.map((skill) => (
+                <span key={skill} className="border-l-2 bg-gray-50 px-2 py-1 text-[10.5px] font-bold text-gray-700 dark:bg-gray-900 dark:text-gray-300" style={{ borderColor: accentColor }}>
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {personalInfo.summary && (
+          <section className="mt-5">
+            <h2 className="mb-2 text-[10px] font-black uppercase text-gray-400">Summary</h2>
+            <p className="text-[11.5px] leading-relaxed text-gray-700 dark:text-gray-300">{personalInfo.summary}</p>
+          </section>
+        )}
+
+        {experience.length > 0 && (
+          <section className="mt-5">
+            <h2 className="mb-3 text-[10px] font-black uppercase text-gray-400">Experience</h2>
+            <div className="space-y-3">
+              {experience.map((exp) => (
+                <div key={exp.id} className="rounded border border-gray-100 p-3 dark:border-gray-700">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h3 className="text-[12px] font-black text-gray-950 dark:text-gray-100">{exp.role || 'Position'}</h3>
+                    <span className="text-[10px] font-mono text-gray-400">{exp.startDate} - {exp.endDate}</span>
+                  </div>
+                  <p className="mb-1.5 text-[10.5px] font-bold uppercase" style={{ color: accentColor }}>{exp.company || 'Company'}</p>
+                  {renderDescription(exp.description)}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {education.length > 0 && (
+          <section className="mt-5">
+            <h2 className="mb-2 text-[10px] font-black uppercase text-gray-400">Education</h2>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {education.map((edu) => (
+                <div key={edu.id} className="text-[11px]">
+                  <span className="font-bold text-gray-900 dark:text-gray-100">{edu.school || 'School'}</span>
+                  <span className="text-gray-500"> - {edu.degree || 'Degree'} {edu.year && `(${edu.year})`}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    )
+  }
+
+  // ==========================================
+  // TEMPLATE 7: CREATIVE (Header Banner)
   // ==========================================
   return (
     <div 

@@ -18,7 +18,7 @@ import {
   CheckIcon as Check
 } from '@heroicons/react/24/outline'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
-import { CV } from '@/lib/types'
+import { CV, CVTemplate } from '@/lib/types'
 import getCVs from '@/lib/getCVs'
 import saveCV from '@/lib/saveCV'
 import createCV from '@/lib/createCV'
@@ -29,10 +29,14 @@ import { getActivePalette, resolveAppAccentColor } from '@/lib/displaySettings'
 
 const TEMPLATE_OPTIONS = [
   { id: 'classic', title: 'Classic Serif', desc: 'Centered, highly academic' },
+  { id: 'classic-ats', title: 'Classic ATS', desc: 'Plain single-column parser-friendly layout' },
   { id: 'modern', title: 'Modern Split', desc: 'Two-column sidebar structure' },
   { id: 'minimalist', title: 'Minimalist', desc: 'Sleek, low padding, single page' },
-  { id: 'creative', title: 'Creative Banner', desc: 'Colored accent, bold titles' }
-]
+  { id: 'creative', title: 'Creative Banner', desc: 'Colored accent, bold titles' },
+  { id: 'executive', title: 'Executive Brief', desc: 'Boardroom header, polished hierarchy' },
+  { id: 'editorial', title: 'Editorial Profile', desc: 'Magazine-style identity treatment' },
+  { id: 'technical', title: 'Technical Matrix', desc: 'Dense, skills-forward engineering layout' }
+] satisfies Array<{ id: CVTemplate; title: string; desc: string }>
 
 /**
  * The Library Page of the AI CV Builder.
@@ -50,7 +54,7 @@ export default function LibraryPage() {
   // Modals / Action States
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false)
   const [newCvTitle, setNewCvTitle] = useState<string>('')
-  const [newCvTemplate, setNewCvTemplate] = useState<'classic' | 'modern' | 'minimalist' | 'creative'>('classic')
+  const [newCvTemplate, setNewCvTemplate] = useState<CVTemplate>('classic')
   
   const [deleteCandidate, setDeleteCandidate] = useState<CV | null>(null)
   const [renameCandidate, setRenameCandidate] = useState<CV | null>(null)
@@ -395,7 +399,7 @@ export default function LibraryPage() {
                     return (
                       <button
                         key={tpl.id}
-                        onClick={() => setNewCvTemplate(tpl.id as 'classic' | 'modern' | 'minimalist' | 'creative')}
+                        onClick={() => setNewCvTemplate(tpl.id)}
                         className={`p-3 border rounded-xl text-left transition-all ${
                           isSelected 
                             ? 'border-blue-600 bg-blue-50/5 dark:border-blue-500 dark:bg-blue-950/10 ring-2 ring-blue-500/10'

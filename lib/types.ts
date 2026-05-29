@@ -23,8 +23,10 @@ export interface Education {
 /**
  * Represents the customization metadata for the CV.
  */
+export type CVTemplate = 'classic' | 'classic-ats' | 'modern' | 'minimalist' | 'creative' | 'executive' | 'editorial' | 'technical'
+
 export interface CVMetadata {
-  template: 'classic' | 'modern' | 'minimalist' | 'creative'
+  template: CVTemplate
   accentColor: string
   fontFamily: 'serif' | 'sans' | 'mono'
 }
@@ -58,4 +60,3 @@ export interface CV {
   updatedAt: string
   data: CVData
 }
-

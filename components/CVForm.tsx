@@ -1,6 +1,6 @@
 'use client'
 
-import { CVData, Experience, Education, CVMetadata } from '@/lib/types'
+import { CVData, Experience, Education, CVMetadata, CVTemplate } from '@/lib/types'
 import { getProviderApiKey, getProviderModel, getSettings } from '@/lib/settings'
 import { getActivePalette, resolveAppAccentColor } from '@/lib/displaySettings'
 import {
@@ -39,6 +39,17 @@ const COLOR_PRESETS = [
   { name: 'Amber', value: '#d97706' },
   { name: 'Graphite', value: '#374151' }
 ]
+
+const TEMPLATE_OPTIONS = [
+  { id: 'classic', title: 'Classic Serif', desc: 'Centered, highly academic' },
+  { id: 'classic-ats', title: 'Classic ATS', desc: 'Plain single-column parser-friendly layout' },
+  { id: 'modern', title: 'Modern Split', desc: 'Two-column sidebar structure' },
+  { id: 'minimalist', title: 'Minimalist', desc: 'Sleek, low padding, single page' },
+  { id: 'creative', title: 'Creative Banner', desc: 'Colored accent, bold titles' },
+  { id: 'executive', title: 'Executive Brief', desc: 'Boardroom header, polished hierarchy' },
+  { id: 'editorial', title: 'Editorial Profile', desc: 'Magazine-style identity treatment' },
+  { id: 'technical', title: 'Technical Matrix', desc: 'Dense, skills-forward engineering layout' }
+] satisfies Array<{ id: CVTemplate; title: string; desc: string }>
 
 /**
  * CVForm component provides an interactive, tabbed editing interface for
@@ -885,13 +896,8 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
             {/* Template Selector */}
             <div className="flex flex-col gap-2.5">
               <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Choose Template Theme</label>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { id: 'classic', title: 'Classic Serif', desc: 'Centered, highly academic' },
-                  { id: 'modern', title: 'Modern Split', desc: 'Two-column sidebar structure' },
-                  { id: 'minimalist', title: 'Minimalist', desc: 'Sleek, low padding, single page' },
-                  { id: 'creative', title: 'Creative Banner', desc: 'Colored accent, bold titles' }
-                ].map((tpl) => {
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {TEMPLATE_OPTIONS.map((tpl) => {
                   const currentTpl = data.metadata?.template || 'classic'
                   const isSelected = currentTpl === tpl.id
                   return (
@@ -924,8 +930,11 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
               <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Template Accent Color</label>
               <div className="flex flex-wrap gap-3 items-center">
                 {colorPresets.map((color) => {
-                  const currentColor = resolveAppAccentColor(data.metadata?.accentColor)
-                  const isSelected = currentColor.toLowerCase() === color.value.toLowerCase()
+                  const rawAccentColor = data.metadata?.accentColor
+                  const currentColor = resolveAppAccentColor(rawAccentColor)
+                  const isSelected = rawAccentColor
+                    ? rawAccentColor.toLowerCase() === color.value.toLowerCase()
+                    : currentColor.toLowerCase() === color.value.toLowerCase()
                   return (
                     <button
                       key={color.name}
