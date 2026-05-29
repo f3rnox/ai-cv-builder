@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Moon, Sun } from "lucide-react";
+import { MoonIcon as Moon, SunIcon as Sun } from "@heroicons/react/24/outline";
 
 export default function ThemeSwitcher() {
   const [theme, setTheme] = useState("light");
@@ -29,9 +29,9 @@ export default function ThemeSwitcher() {
       aria-label="Toggle theme"
     >
       {theme === "dark" ? (
-        <Sun size={20} className="text-yellow-500" />
+        <Sun width={20} height={20} className="text-yellow-500" />
       ) : (
-        <Moon size={20} className="text-blue-600" />
+        <Moon width={20} height={20} className="text-blue-600" />
       )}
     </button>
   );

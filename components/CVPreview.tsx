@@ -1,7 +1,12 @@
 'use client'
 
 import { CVData } from '@/lib/types'
-import { Mail, Phone, MapPin, Award } from 'lucide-react'
+import {
+  EnvelopeIcon as Mail,
+  PhoneIcon as Phone,
+  MapPinIcon as MapPin,
+  TrophyIcon as Award
+} from '@heroicons/react/24/outline'
 import { resolveAppAccentColor } from '@/lib/displaySettings'
 
 /**
@@ -98,7 +103,7 @@ export default function CVPreview({ data }: CVPreviewProps) {
     return (
       <div 
         id="cv-printable-area"
-        className={`bg-white dark:bg-gray-800 p-10 shadow-lg min-h-[842px] w-full max-w-[595px] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
+        className={`bg-white dark:bg-gray-800 p-10 min-h-[842px] w-full text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
       >
         {/* Centered Formal Header */}
         <div className="text-center border-b-2 pb-5 mb-5" style={{ borderColor: `${accentColor}20` }}>
@@ -112,19 +117,19 @@ export default function CVPreview({ data }: CVPreviewProps) {
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-3 text-xs text-gray-500 dark:text-gray-400 font-medium">
             {personalInfo.email && (
               <span className="flex items-center gap-1">
-                <Mail size={11} style={{ color: accentColor }} />
+                <Mail width={11} height={11} style={{ color: accentColor }} />
                 {personalInfo.email}
               </span>
             )}
             {personalInfo.phone && (
               <span className="flex items-center gap-1">
-                <Phone size={11} style={{ color: accentColor }} />
+                <Phone width={11} height={11} style={{ color: accentColor }} />
                 {personalInfo.phone}
               </span>
             )}
             {personalInfo.location && (
               <span className="flex items-center gap-1">
-                <MapPin size={11} style={{ color: accentColor }} />
+                <MapPin width={11} height={11} style={{ color: accentColor }} />
                 {personalInfo.location}
               </span>
             )}
@@ -208,7 +213,7 @@ export default function CVPreview({ data }: CVPreviewProps) {
     return (
       <div 
         id="cv-printable-area"
-        className={`bg-white dark:bg-gray-800 shadow-lg min-h-[842px] w-full max-w-[595px] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 flex transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
+        className={`bg-white dark:bg-gray-800 min-h-[842px] w-full text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 flex transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
       >
         {/* Left Column (Sidebar) */}
         <div className="w-[195px] bg-slate-50 dark:bg-slate-900/40 p-6 border-r border-slate-100 dark:border-slate-800 shrink-0 flex flex-col gap-6 print:!bg-slate-50">
@@ -229,21 +234,21 @@ export default function CVPreview({ data }: CVPreviewProps) {
             
             {personalInfo.email && (
               <div className="flex items-start gap-2 text-[11px]">
-                <Mail size={12} className="mt-0.5 shrink-0" style={{ color: accentColor }} />
+                <Mail width={12} height={12} className="mt-0.5 shrink-0" style={{ color: accentColor }} />
                 <span className="break-all text-slate-600 dark:text-slate-300">{personalInfo.email}</span>
               </div>
             )}
             
             {personalInfo.phone && (
               <div className="flex items-start gap-2 text-[11px]">
-                <Phone size={12} className="mt-0.5 shrink-0" style={{ color: accentColor }} />
+                <Phone width={12} height={12} className="mt-0.5 shrink-0" style={{ color: accentColor }} />
                 <span className="text-slate-600 dark:text-slate-300">{personalInfo.phone}</span>
               </div>
             )}
 
             {personalInfo.location && (
               <div className="flex items-start gap-2 text-[11px]">
-                <MapPin size={12} className="mt-0.5 shrink-0" style={{ color: accentColor }} />
+                <MapPin width={12} height={12} className="mt-0.5 shrink-0" style={{ color: accentColor }} />
                 <span className="text-slate-600 dark:text-slate-300">{personalInfo.location}</span>
               </div>
             )}
@@ -338,7 +343,7 @@ export default function CVPreview({ data }: CVPreviewProps) {
     return (
       <div 
         id="cv-printable-area"
-        className={`bg-white dark:bg-gray-800 p-8 shadow-lg min-h-[842px] w-full max-w-[595px] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
+        className={`bg-white dark:bg-gray-800 p-8 min-h-[842px] w-full text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 transition-all ${fontClass} ${CV_PRINT_CLASSES}`}
       >
         {/* Low Profile Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end border-b pb-3 mb-4 border-slate-100 dark:border-slate-800">
@@ -436,7 +441,7 @@ export default function CVPreview({ data }: CVPreviewProps) {
   return (
     <div 
       id="cv-printable-area"
-      className={`bg-white dark:bg-gray-800 shadow-lg min-h-[842px] w-full max-w-[595px] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 transition-all overflow-hidden ${fontClass} ${CV_PRINT_CLASSES}`}
+      className={`bg-white dark:bg-gray-800 min-h-[842px] w-full text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 transition-all overflow-hidden ${fontClass} ${CV_PRINT_CLASSES}`}
     >
       {/* Sleek Top Accent Banner */}
       <div className="p-8 text-white relative flex flex-col gap-1" style={{ backgroundColor: accentColor }}>
@@ -451,19 +456,19 @@ export default function CVPreview({ data }: CVPreviewProps) {
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 text-[11px] font-medium opacity-85 pt-3 border-t border-white/20">
           {personalInfo.email && (
             <span className="flex items-center gap-1.5">
-              <Mail size={11} />
+              <Mail width={11} height={11} />
               {personalInfo.email}
             </span>
           )}
           {personalInfo.phone && (
             <span className="flex items-center gap-1.5">
-              <Phone size={11} />
+              <Phone width={11} height={11} />
               {personalInfo.phone}
             </span>
           )}
           {personalInfo.location && (
             <span className="flex items-center gap-1.5">
-              <MapPin size={11} />
+              <MapPin width={11} height={11} />
               {personalInfo.location}
             </span>
           )}
@@ -476,7 +481,7 @@ export default function CVPreview({ data }: CVPreviewProps) {
         {personalInfo.summary && (
           <div>
             <h2 className="text-[11px] font-black uppercase tracking-widest mb-2 flex items-center gap-1" style={{ color: accentColor }}>
-              <Award size={13} />
+              <Award width={13} height={13} />
               About Me
             </h2>
             <p className="text-[12px] leading-relaxed text-gray-700 dark:text-gray-300">
@@ -489,7 +494,7 @@ export default function CVPreview({ data }: CVPreviewProps) {
         {experience.length > 0 && (
           <div>
             <h2 className="text-[11px] font-black uppercase tracking-widest mb-3.5 flex items-center gap-1" style={{ color: accentColor }}>
-              <Award size={13} />
+              <Award width={13} height={13} />
               Professional Experience
             </h2>
             <div className="space-y-4">
@@ -516,7 +521,7 @@ export default function CVPreview({ data }: CVPreviewProps) {
         {education.length > 0 && (
           <div>
             <h2 className="text-[11px] font-black uppercase tracking-widest mb-2.5 flex items-center gap-1" style={{ color: accentColor }}>
-              <Award size={13} />
+              <Award width={13} height={13} />
               Education
             </h2>
             <div className="space-y-3">
@@ -537,7 +542,7 @@ export default function CVPreview({ data }: CVPreviewProps) {
         {skills.length > 0 && (
           <div>
             <h2 className="text-[11px] font-black uppercase tracking-widest mb-2 flex items-center gap-1" style={{ color: accentColor }}>
-              <Award size={13} />
+              <Award width={13} height={13} />
               Skills & Expertise
             </h2>
             <div className="flex flex-wrap gap-1.5 mt-2">

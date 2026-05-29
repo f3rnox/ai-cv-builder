@@ -4,20 +4,20 @@ import { useEffect, useMemo, useState, ChangeEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
-  Plus, 
-  Trash2, 
-  Copy, 
-  Edit3, 
-  Search, 
-  Upload, 
-  Clock, 
-  Settings, 
-  Briefcase, 
-  User, 
-  ExternalLink, 
-  Sparkles,
-  Check
-} from 'lucide-react'
+  PlusIcon as Plus,
+  TrashIcon as Trash2,
+  DocumentDuplicateIcon as Copy,
+  PencilSquareIcon as Edit3,
+  MagnifyingGlassIcon as Search,
+  ArrowUpTrayIcon as Upload,
+  ClockIcon as Clock,
+  Cog6ToothIcon as Settings,
+  BriefcaseIcon as Briefcase,
+  UserIcon as User,
+  ArrowTopRightOnSquareIcon as ExternalLink,
+  SparklesIcon as Wand2,
+  CheckIcon as Check
+} from '@heroicons/react/24/outline'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
 import { CV } from '@/lib/types'
 import getCVs from '@/lib/getCVs'
@@ -192,7 +192,7 @@ export default function LibraryPage() {
             href="/settings"
             className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-800/50 px-3.5 py-2 rounded-lg transition-colors"
           >
-            <Settings size={14} />
+            <Settings width={14} height={14} />
             Settings
           </Link>
         </div>
@@ -214,7 +214,7 @@ export default function LibraryPage() {
               className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 border border-gray-200/60 dark:border-gray-800/80 px-4 py-2.5 rounded-xl cursor-pointer shadow-xs transition-colors"
               title="Import CV Backup JSON"
             >
-              <Upload size={14} />
+              <Upload width={14} height={14} />
               Import Backup
               <input 
                 type="file" 
@@ -229,7 +229,7 @@ export default function LibraryPage() {
               onClick={() => setShowCreateModal(true)}
               className="flex items-center gap-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl shadow-md shadow-blue-500/10 transition-colors"
             >
-              <Plus size={15} />
+              <Plus width={15} height={15} />
               Create New CV
             </button>
           </div>
@@ -240,7 +240,7 @@ export default function LibraryPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl shadow-xs">
             <div className="relative w-full sm:max-w-md">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                <Search size={16} />
+                <Search width={16} height={16} />
               </span>
               <input
                 type="text"
@@ -282,14 +282,14 @@ export default function LibraryPage() {
                   onClick={handleCreateSample}
                   className="px-6 py-3 bg-blue-50 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl font-semibold text-sm transition-colors border border-blue-100 dark:border-blue-900/50 flex items-center justify-center gap-1.5"
                 >
-                  <Sparkles size={14} />
+                  <Wand2 width={14} height={14} />
                   Load Rich Sample CV
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl font-bold text-sm shadow-md shadow-blue-500/10 transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <Plus size={16} />
+                  <Plus width={16} height={16} />
                   Create From Scratch
                 </button>
               </div>
@@ -329,7 +329,7 @@ export default function LibraryPage() {
                           {cv.title}
                         </h4>
                         <div className="flex items-center gap-1 text-gray-400 dark:text-gray-500 text-[11px] mt-1 font-medium">
-                          <Clock size={11} />
+                          <Clock width={11} height={11} />
                           <span>Updated {formatTimeAgo(cv.updatedAt)}</span>
                         </div>
                       </div>
@@ -344,13 +344,13 @@ export default function LibraryPage() {
                     {/* Metadata Content Summary */}
                     <div className="flex-1 flex flex-col gap-2">
                       <div className="flex items-center gap-2 text-xs">
-                        <User size={13} className="text-gray-400 dark:text-gray-500" />
+                        <User width={13} height={13} className="text-gray-400 dark:text-gray-500" />
                         <span className="font-semibold text-gray-700 dark:text-gray-300 truncate">
                           {personalName || <span className="text-gray-300 dark:text-gray-700 italic">No Name Added</span>}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <Briefcase size={13} className="text-gray-400 dark:text-gray-500" />
+                        <Briefcase width={13} height={13} className="text-gray-400 dark:text-gray-500" />
                         <span className="text-gray-500 dark:text-gray-400 truncate">
                           {professionalTitle || <span className="text-gray-300 dark:text-gray-700 italic">No Title Added</span>}
                         </span>
@@ -370,7 +370,7 @@ export default function LibraryPage() {
                         className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/30 rounded-lg transition-colors"
                         title="Rename CV"
                       >
-                        <Edit3 size={14} />
+                        <Edit3 width={14} height={14} />
                       </button>
 
                       {/* Duplicate CV */}
@@ -379,7 +379,7 @@ export default function LibraryPage() {
                         className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/30 rounded-lg transition-colors"
                         title="Duplicate CV"
                       >
-                        <Copy size={14} />
+                        <Copy width={14} height={14} />
                       </button>
 
                       {/* Delete CV */}
@@ -388,7 +388,7 @@ export default function LibraryPage() {
                         className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-950/30 rounded-lg transition-colors"
                         title="Delete CV"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 width={14} height={14} />
                       </button>
                     </div>
 
@@ -397,7 +397,7 @@ export default function LibraryPage() {
                       className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                     >
                       <span>Edit & Design</span>
-                      <ExternalLink size={12} />
+                      <ExternalLink width={12} height={12} />
                     </Link>
                   </div>
                 </div>
@@ -461,7 +461,7 @@ export default function LibraryPage() {
                           <span className="font-bold text-xs text-gray-900 dark:text-gray-100">{tpl.title}</span>
                           {isSelected && (
                             <div className="w-3.5 h-3.5 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center text-white text-[9px]">
-                              <Check size={9} strokeWidth={3} />
+                              <Check width={9} height={9} strokeWidth={3} />
                             </div>
                           )}
                         </div>

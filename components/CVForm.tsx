@@ -4,22 +4,22 @@ import { CVData, Experience, Education, CVMetadata } from '@/lib/types'
 import { getSettings } from '@/lib/settings'
 import { getActivePalette, resolveAppAccentColor } from '@/lib/displaySettings'
 import { useCompletion } from '@ai-sdk/react'
-import { 
-  Sparkles, 
-  Plus, 
-  Trash2, 
-  ArrowUp, 
-  ArrowDown, 
-  User, 
-  Briefcase, 
-  GraduationCap, 
-  Wrench, 
-  Palette, 
-  Check, 
-  RotateCcw,
-  Sparkle
-} from 'lucide-react'
-import { useState, KeyboardEvent } from 'react'
+import {
+  SparklesIcon,
+  ArrowUpTrayIcon,
+  PlusIcon,
+  TrashIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  UserIcon,
+  BriefcaseIcon,
+  AcademicCapIcon,
+  Cog6ToothIcon,
+  PaintBrushIcon,
+  CheckIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/outline'
+import { useRef, useState, KeyboardEvent, ChangeEvent } from 'react'
 
 /**
  * Properties for the CVForm component.
@@ -27,7 +27,6 @@ import { useState, KeyboardEvent } from 'react'
 interface CVFormProps {
   data: CVData
   onChange: (data: CVData) => void
-  onLoadSample: () => void
   onClear: () => void
 }
 
@@ -48,11 +47,13 @@ const COLOR_PRESETS = [
  * @param {CVFormProps} props - Component properties.
  * @returns {JSX.Element} The rendered form interface.
  */
-export default function CVForm({ data, onChange, onLoadSample, onClear }: CVFormProps) {
+export default function CVForm({ data, onChange, onClear }: CVFormProps) {
   const [activeTab, setActiveTab] = useState<'personal' | 'experience' | 'education' | 'skills' | 'design'>('personal')
   const [skillInput, setSkillInput] = useState('')
   const [enhancingField, setEnhancingField] = useState<{ type: string; id?: string } | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [isParsingPdf, setIsParsingPdf] = useState(false)
+  const pdfInputRef = useRef<HTMLInputElement | null>(null)
   const appPalette = getActivePalette()
   const colorPresets = [
     { name: 'App Palette', value: appPalette.primary },
@@ -105,6 +106,68 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
         apiKey
       } 
     })
+  }
+
+  const handlePdfImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    if (file.type !== 'application/pdf') {
+      setErrorMsg('Please upload a PDF file.')
+      return
+    }
+
+    const settings = getSettings()
+    let provider = settings.provider
+    let apiKey = provider === 'google' ? settings.googleKey : settings.openaiKey
+
+    if (!apiKey && settings.openaiKey) {
+      provider = 'openai'
+      apiKey = settings.openaiKey
+    } else if (!apiKey && settings.googleKey) {
+      provider = 'google'
+      apiKey = settings.googleKey
+    }
+
+    if (!apiKey) {
+      setErrorMsg('Configure an OpenAI or Google Gemini API key in Settings before uploading a PDF CV.')
+      return
+    }
+
+    setIsParsingPdf(true)
+    setErrorMsg(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('provider', provider)
+      formData.append('apiKey', apiKey)
+
+      const response = await fetch('/api/parse-cv-pdf', {
+        method: 'POST',
+        body: formData
+      })
+      const payload = await response.json() as { data?: Omit<CVData, 'metadata'>; error?: string }
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error || 'Failed to parse PDF CV.')
+      }
+
+      onChange({
+        ...payload.data,
+        metadata: data.metadata || {
+          template: 'classic',
+          accentColor: appPalette.primary,
+          fontFamily: 'sans'
+        }
+      })
+      setActiveTab('personal')
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : 'Failed to parse PDF CV.')
+    } finally {
+      setIsParsingPdf(false)
+    }
   }
 
   const updatePersonalInfo = (field: string, value: string) => {
@@ -226,7 +289,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
   const updateMetadata = (field: keyof CVMetadata, value: string) => {
     const currentMetadata: CVMetadata = data.metadata || {
       template: 'classic',
-                  accentColor: appPalette.primary,
+      accentColor: appPalette.primary,
       fontFamily: 'serif'
     }
     onChange({
@@ -270,18 +333,26 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Customize your CV content and styling</p>
         </div>
         <div className="flex items-center gap-2">
+          <input
+            ref={pdfInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            onChange={handlePdfImport}
+          />
           <button
-            onClick={onLoadSample}
-            className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-blue-200 dark:border-blue-900 px-3 py-1.5 rounded-lg transition-colors"
+            onClick={() => pdfInputRef.current?.click()}
+            disabled={isParsingPdf}
+            className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-blue-200 dark:border-blue-900 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
           >
-            <Sparkle size={13} />
-            Load Sample
+            <ArrowUpTrayIcon className="h-3.5 w-3.5" />
+            {isParsingPdf ? 'Parsing PDF...' : 'Upload PDF CV'}
           </button>
           <button
             onClick={onClear}
             className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors"
           >
-            <RotateCcw size={13} />
+            <ArrowPathIcon width={13} height={13} />
             Reset
           </button>
         </div>
@@ -318,7 +389,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50/50'
           }`}
         >
-          <User size={16} />
+          <UserIcon className="h-4 w-4" />
           <span>Personal</span>
           {data.personalInfo.name.trim() && (
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -333,7 +404,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50/50'
           }`}
         >
-          <Briefcase size={16} />
+          <BriefcaseIcon className="h-4 w-4" />
           <span>Experience</span>
           {data.experience.some((e) => e.company.trim() || e.role.trim()) && (
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -348,7 +419,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50/50'
           }`}
         >
-          <GraduationCap size={16} />
+          <AcademicCapIcon className="h-4 w-4" />
           <span>Education</span>
           {data.education.some((e) => e.school.trim() || e.degree.trim()) && (
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -363,7 +434,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50/50'
           }`}
         >
-          <Wrench size={16} />
+          <Cog6ToothIcon className="h-4 w-4" />
           <span>Skills</span>
           {data.skills.length > 0 && (
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -378,7 +449,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50/50'
           }`}
         >
-          <Palette size={16} />
+          <PaintBrushIcon className="h-4 w-4" />
           <span>Design</span>
         </button>
       </div>
@@ -465,7 +536,11 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                   disabled={isLoading || !data.personalInfo.summary.trim()}
                   className="flex items-center gap-1.5 text-xs bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-3 py-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-40 transition-all font-medium"
                 >
-                  <Sparkles size={13} className={isLoading && enhancingField?.type === 'summary' ? 'animate-spin' : ''} />
+                  {isLoading && enhancingField?.type === 'summary' ? (
+                    <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <SparklesIcon className="h-3.5 w-3.5" />
+                  )}
                   {isLoading && enhancingField?.type === 'summary' ? 'Enhancing...' : 'AI Refine'}
                 </button>
               </div>
@@ -491,13 +566,13 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                 onClick={addExperience}
                 className="flex items-center gap-1.5 text-xs font-semibold bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-3.5 py-1.5 rounded-lg shadow-sm transition-colors"
               >
-                <Plus size={14} /> Add Role
+                <PlusIcon className="h-4 w-4" /> Add Role
               </button>
             </div>
 
             {data.experience.length === 0 ? (
               <div className="text-center py-12 border border-dashed rounded-xl border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center">
-                <Briefcase size={32} className="text-gray-300 dark:text-gray-600 mb-3" />
+                <BriefcaseIcon className="h-8 w-8 text-gray-300 dark:text-gray-600 mb-3" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">No work experience added yet.</p>
                 <button
                   onClick={addExperience}
@@ -522,7 +597,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                         className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-20 transition-colors"
                         title="Move Up"
                       >
-                        <ArrowUp size={15} />
+                        <ArrowUpIcon className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => moveExperience(index, 'down')}
@@ -530,14 +605,14 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                         className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-20 transition-colors"
                         title="Move Down"
                       >
-                        <ArrowDown size={15} />
+                        <ArrowDownIcon className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => removeExperience(exp.id)}
                         className="p-1 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-colors"
                         title="Delete Entry"
                       >
-                        <Trash2 size={15} />
+                        <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
 
@@ -588,7 +663,11 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                           disabled={isLoading || !exp.description.trim()}
                           className="flex items-center gap-1.5 text-xs bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-3 py-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-40 transition-all font-medium"
                         >
-                          <Sparkles size={12} className={isLoading && enhancingField?.id === exp.id ? 'animate-spin' : ''} />
+                          {isLoading && enhancingField?.id === exp.id ? (
+                            <ArrowPathIcon className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <SparklesIcon className="h-3 w-3" />
+                          )}
                           {isLoading && enhancingField?.id === exp.id ? 'Enhancing...' : 'AI Professional Rewrite'}
                         </button>
                       </div>
@@ -619,13 +698,13 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                 onClick={addEducation}
                 className="flex items-center gap-1.5 text-xs font-semibold bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-3.5 py-1.5 rounded-lg shadow-sm transition-colors"
               >
-                <Plus size={14} /> Add Degree
+                <PlusIcon className="h-4 w-4" /> Add Degree
               </button>
             </div>
 
             {data.education.length === 0 ? (
               <div className="text-center py-12 border border-dashed rounded-xl border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center">
-                <GraduationCap size={32} className="text-gray-300 dark:text-gray-600 mb-3" />
+                <AcademicCapIcon className="h-8 w-8 text-gray-300 dark:text-gray-600 mb-3" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">No education entries yet.</p>
                 <button
                   onClick={addEducation}
@@ -681,7 +760,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                         className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-20 transition-colors"
                         title="Move Up"
                       >
-                        <ArrowUp size={15} />
+                        <ArrowUpIcon className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => moveEducation(index, 'down')}
@@ -689,14 +768,14 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                         className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-20 transition-colors"
                         title="Move Down"
                       >
-                        <ArrowDown size={15} />
+                        <ArrowDownIcon className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => removeEducation(edu.id)}
                         className="p-1 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-colors"
                         title="Delete Degree"
                       >
-                        <Trash2 size={15} />
+                        <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
 
@@ -794,7 +873,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                         <span className="font-bold text-sm text-gray-900 dark:text-gray-100">{tpl.title}</span>
                         {isSelected && (
                           <div className="w-4 h-4 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center text-white text-[10px]">
-                            <Check size={10} strokeWidth={3} />
+                            <CheckIcon className="h-2.5 w-2.5 stroke-3" />
                           </div>
                         )}
                       </div>
@@ -822,7 +901,7 @@ export default function CVForm({ data, onChange, onLoadSample, onClear }: CVForm
                     >
                       {isSelected && (
                         <div className="w-5 h-5 bg-white/30 backdrop-blur-[1px] rounded-full flex items-center justify-center">
-                          <Check size={12} className="text-white drop-shadow-md" strokeWidth={3} />
+                          <CheckIcon className="h-3 w-3 text-white drop-shadow-md stroke-3" />
                         </div>
                       )}
                     </button>

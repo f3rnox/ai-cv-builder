@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Palette } from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, SwatchIcon as Palette } from '@heroicons/react/24/outline'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
 import { 
   DisplaySettings, 
@@ -96,7 +96,7 @@ export default function DisplaySettingsPage() {
           href="/"
           className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft width={16} height={16} />
           Back to Builder
         </Link>
         <ThemeSwitcher />
@@ -161,7 +161,7 @@ export default function DisplaySettingsPage() {
             <div className="flex flex-col gap-2.5 pt-2 border-t border-gray-100 dark:border-gray-800">
               <div>
                 <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                  <Palette size={14} />
+                  <Palette width={14} height={14} />
                   Custom Color Palette
                 </label>
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Select a primary color scheme for the application dashboard and editor</p>

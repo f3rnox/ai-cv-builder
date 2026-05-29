@@ -1,7 +1,7 @@
 'use client'
 
 import { AppSettings, getSettings, saveSettings, Provider } from '@/lib/settings'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, BookmarkSquareIcon as Save } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
@@ -43,7 +43,7 @@ export default function SettingsPage() {
           href="/"
           className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft width={16} height={16} />
           Back to Builder
         </Link>
         <ThemeSwitcher />
@@ -118,7 +118,7 @@ export default function SettingsPage() {
               onClick={handleSave}
               className="mt-4 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white p-3 rounded-lg font-semibold text-sm shadow-sm transition-colors"
             >
-              <Save size={16} />
+              <Save width={16} height={16} />
               {savedStatus ? 'Saved!' : 'Save Settings'}
             </button>
           </div>

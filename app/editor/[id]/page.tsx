@@ -5,10 +5,19 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { CV, CVData } from '@/lib/types'
-import { getSampleData } from '@/lib/samples'
 import getCVById from '@/lib/getCVById'
 import saveCV from '@/lib/saveCV'
-import { Settings, Printer, Download, Upload, Eye, Edit, ArrowLeft, Edit3, Check } from 'lucide-react'
+import {
+  Cog6ToothIcon as Settings,
+  PrinterIcon as Printer,
+  ArrowDownTrayIcon as Download,
+  ArrowUpTrayIcon as Upload,
+  EyeIcon as Eye,
+  ArrowLeftIcon as ArrowLeft,
+  PencilSquareIcon as Edit3,
+  CheckIcon as Check,
+  XMarkIcon as X
+} from '@heroicons/react/24/outline'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
 import { getActivePalette } from '@/lib/displaySettings'
 
@@ -24,7 +33,7 @@ const PanelFallback = () => (
 )
 
 const PreviewFallback = () => (
-  <div className="min-h-[842px] w-full max-w-[595px] animate-pulse rounded-sm bg-white shadow-lg dark:bg-gray-800" />
+  <div className="min-h-[842px] w-full animate-pulse bg-white dark:bg-gray-800" />
 )
 
 const CVForm = dynamic(() => import('@/components/CVForm'), {
@@ -53,9 +62,8 @@ export default function EditorPage({ params }: EditorPageProps) {
   const router = useRouter()
   const [cv, setCv] = useState<CV | null>(null)
   const [mounted, setMounted] = useState<boolean>(false)
-  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit')
+  const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false)
   const [showResetModal, setShowResetModal] = useState<boolean>(false)
-  const [showSampleModal, setShowSampleModal] = useState<boolean>(false)
   const [isRenaming, setIsRenaming] = useState<boolean>(false)
   const [newTitle, setNewTitle] = useState<string>('')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
@@ -114,6 +122,22 @@ export default function EditorPage({ params }: EditorPageProps) {
     }
   }, [saveStatus])
 
+  useEffect(() => {
+    if (!isPreviewOpen) return
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsPreviewOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isPreviewOpen])
+
   const handleDataChange = useCallback((newData: CVData) => {
     if (!cv) return
     setSaveStatus('saving')
@@ -146,33 +170,6 @@ export default function EditorPage({ params }: EditorPageProps) {
     saveCV(updatedCV)
     setSaveStatus('saved')
     setIsRenaming(false)
-  }
-
-  const handleLoadSample = () => {
-    if (!cv) return
-    const data = cv.data
-    // Check if the current CV is not empty
-    const isNotEmpty = 
-      data.personalInfo.name.trim() || 
-      data.personalInfo.title.trim() || 
-      data.personalInfo.email.trim() || 
-      data.personalInfo.phone.trim() || 
-      data.personalInfo.location.trim() || 
-      data.personalInfo.summary.trim() ||
-      data.experience.some(e => e.company.trim() || e.role.trim() || e.description.trim()) ||
-      data.education.some(e => e.school.trim() || e.degree.trim()) ||
-      data.skills.length > 0
-
-    if (isNotEmpty) {
-      setShowSampleModal(true)
-    } else {
-      handleDataChange(getSampleData())
-    }
-  }
-
-  const confirmLoadSample = () => {
-    handleDataChange(getSampleData())
-    setShowSampleModal(false)
   }
 
   const handleClear = () => {
@@ -283,7 +280,7 @@ export default function EditorPage({ params }: EditorPageProps) {
             href="/"
             className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-800/50 px-3 py-2 rounded-lg transition-colors"
           >
-            <ArrowLeft size={14} />
+            <ArrowLeft width={14} height={14} />
             Library
           </Link>
           
@@ -311,7 +308,7 @@ export default function EditorPage({ params }: EditorPageProps) {
                 className="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30 rounded-lg transition-colors"
                 title="Save Title"
               >
-                <Check size={14} />
+                <Check width={14} height={14} />
               </button>
             </div>
           ) : (
@@ -324,7 +321,7 @@ export default function EditorPage({ params }: EditorPageProps) {
                 className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity rounded"
                 title="Rename CV"
               >
-                <Edit3 size={13} />
+                <Edit3 width={13} height={13} />
               </button>
             </div>
           )}
@@ -351,119 +348,108 @@ export default function EditorPage({ params }: EditorPageProps) {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            onClick={() => setIsPreviewOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/50 px-3.5 py-2 rounded-lg transition-colors"
+          >
+            <Eye width={14} height={14} />
+            Preview
+          </button>
           <ThemeSwitcher />
           <Link 
             href="/settings"
             className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-800/50 px-3.5 py-2 rounded-lg transition-colors"
           >
-            <Settings size={14} />
+            <Settings width={14} height={14} />
             Settings
           </Link>
         </div>
       </header>
 
-      {/* Main Responsive Workspace */}
-      <main className="flex-1 px-4 py-4 md:px-6 md:py-6 flex flex-col lg:flex-row gap-6 print:m-0 print:block print:h-auto print:overflow-visible print:p-0">
-        
-        {/* Mobile View Tab Switcher */}
-        <div className="print:hidden lg:hidden flex bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 p-1 rounded-xl shadow-sm w-full">
-          <button
-            onClick={() => setViewMode('edit')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
-              viewMode === 'edit'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
-          >
-            <Edit size={14} />
-            Edit Details
-          </button>
-          <button
-            onClick={() => setViewMode('preview')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
-              viewMode === 'preview'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
-          >
-            <Eye size={14} />
-            Live Preview
-          </button>
-        </div>
-
-        {/* 1. Left Column: CV Editor Form */}
-        <div className={`flex-1 print:hidden ${
-          viewMode === 'edit' ? 'block' : 'hidden lg:block'
-        }`}>
+      {/* Main Workspace */}
+      <main className="flex-1 px-4 py-4 md:px-6 md:py-6 print:m-0 print:block print:h-auto print:overflow-visible print:p-0">
+        <div className="print:hidden">
           <CVForm 
             data={cv.data} 
             onChange={handleDataChange} 
-            onLoadSample={handleLoadSample} 
             onClear={handleClear} 
           />
         </div>
+      </main>
 
-        {/* 2. Right Column: Document Live Preview */}
-        <div className={`flex-1 flex flex-col bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm print:block print:overflow-visible print:rounded-none print:border-0 print:bg-white print:shadow-none ${
-          viewMode === 'preview' ? 'block' : 'hidden lg:block'
-        }`}>
-          
-          {/* Preview Panel Action Bar */}
-          <div className="print:hidden px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex flex-wrap justify-between items-center gap-3">
+      <button
+        type="button"
+        aria-label="Close preview"
+        aria-hidden={!isPreviewOpen}
+        tabIndex={isPreviewOpen ? 0 : -1}
+        onClick={() => setIsPreviewOpen(false)}
+        className={`fixed inset-0 z-30 bg-gray-950/45 backdrop-blur-[2px] transition-opacity duration-300 print:hidden ${
+          isPreviewOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      />
+
+      <aside
+        aria-hidden={!isPreviewOpen}
+        className={`fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden border-l border-gray-100 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-gray-800 dark:bg-gray-900 md:w-[min(1120px,calc(100vw-48px))] print:static print:z-auto print:block print:h-auto print:w-full print:translate-x-0 print:overflow-visible print:border-0 print:bg-white print:shadow-none ${
+          isPreviewOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Preview Panel Action Bar */}
+        <div className="print:hidden px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md flex flex-wrap justify-between items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsPreviewOpen(false)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200/70 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+              title="Close Preview"
+            >
+              <X width={16} height={16} />
+            </button>
             <div>
               <h2 className="font-semibold text-xs text-gray-800 dark:text-gray-200 tracking-wide uppercase">Print & Export</h2>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Generate your final document layout</p>
             </div>
-
-            <div className="flex items-center gap-2">
-              {/* Export JSON */}
-              <button
-                onClick={handleExportJSON}
-                className="flex items-center justify-center p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/30 rounded-lg border border-gray-200/50 dark:border-gray-800/50 transition-colors"
-                title="Export Backup (JSON)"
-              >
-                <Download size={14} />
-              </button>
-
-              {/* Import JSON */}
-              <label 
-                className="flex items-center justify-center p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/30 rounded-lg border border-gray-200/50 dark:border-gray-800/50 cursor-pointer transition-colors"
-                title="Import Backup (JSON)"
-              >
-                <Upload size={14} />
-                <input 
-                  type="file" 
-                  accept=".json" 
-                  onChange={handleImportJSON} 
-                  className="hidden" 
-                />
-              </label>
-
-              {/* Print / Download PDF */}
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-1.5 text-xs font-bold bg-gray-900 hover:bg-gray-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
-              >
-                <Printer size={13} />
-                Download PDF
-              </button>
-            </div>
           </div>
 
-          {/* Interactive Preview Viewport */}
-          <div className="flex-1 overflow-y-auto p-8 flex justify-center items-start bg-slate-50 dark:bg-gray-950 bg-[radial-gradient(#e2e8f0_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] bg-size-[18px_18px] relative [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-[10px] [&::-webkit-scrollbar-thumb]:bg-gray-400/25 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400/45 print:block print:overflow-visible print:bg-white print:bg-none print:p-0">
-            <div className="absolute top-4 left-4 pointer-events-none bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-100 dark:border-gray-800/50 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 shadow-xs print:hidden">
-              Live A4 Viewport
-            </div>
-            <div className="w-full transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.35)] rounded-sm overflow-hidden print:overflow-visible print:rounded-none print:shadow-none">
-              <CVPreview data={deferredCVData || cv.data} />
-            </div>
-          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportJSON}
+              className="flex items-center justify-center p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/30 rounded-lg border border-gray-200/50 dark:border-gray-800/50 transition-colors"
+              title="Export Backup (JSON)"
+            >
+              <Download width={14} height={14} />
+            </button>
 
+            <label 
+              className="flex items-center justify-center p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/30 rounded-lg border border-gray-200/50 dark:border-gray-800/50 cursor-pointer transition-colors"
+              title="Import Backup (JSON)"
+            >
+              <Upload width={14} height={14} />
+              <input 
+                type="file" 
+                accept=".json" 
+                onChange={handleImportJSON} 
+                className="hidden" 
+              />
+            </label>
+
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-1.5 text-xs font-bold bg-gray-900 hover:bg-gray-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
+            >
+              <Printer width={13} height={13} />
+              Download PDF
+            </button>
+          </div>
         </div>
 
-      </main>
+        {/* Interactive Preview Viewport */}
+        <div className="flex-1 overflow-y-auto p-0 flex items-start relative [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-[10px] [&::-webkit-scrollbar-thumb]:bg-gray-400/25 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400/45 print:block print:overflow-visible print:bg-white print:bg-none print:p-0">
+          <div className="w-full transition-all duration-300 print:max-w-none print:overflow-visible">
+            <CVPreview data={deferredCVData || cv.data} />
+          </div>
+        </div>
+      </aside>
 
       {/* Confirmation Modals */}
       {showResetModal && (
@@ -495,41 +481,6 @@ export default function EditorPage({ params }: EditorPageProps) {
                 className="px-5 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500 text-white rounded-xl font-semibold text-sm shadow-sm transition-colors cursor-pointer"
               >
                 Reset Fields
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showSampleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto transition duration-200 ease-out">
-          <button 
-            onClick={() => setShowSampleModal(false)}
-            className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-xs transition-opacity w-full h-full border-0 cursor-default" 
-            aria-label="Close Modal"
-          />
-          <div className="relative w-full max-w-md bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-6 overflow-hidden transition-all text-center">
-            <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 text-xl">
-              💡
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-              Overwrite Current CV Details?
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-              Loading sample data will replace all the current details you entered. Do you want to proceed and load the pre-filled sample?
-            </p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => setShowSampleModal(false)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmLoadSample}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl font-semibold text-sm shadow-sm transition-colors cursor-pointer"
-              >
-                Proceed & Load
               </button>
             </div>
           </div>
