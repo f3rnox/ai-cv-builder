@@ -93,7 +93,8 @@ export default function LibraryPage() {
     sampleData.metadata = {
       template: sampleData.metadata?.template || 'classic',
       accentColor: getActivePalette().primary,
-      fontFamily: sampleData.metadata?.fontFamily || 'sans'
+      fontFamily: sampleData.metadata?.fontFamily || 'sans',
+      sectionOrder: sampleData.metadata?.sectionOrder
     }
     const title = sampleData.personalInfo.name ? `${sampleData.personalInfo.name}'s Sample CV` : 'Sample CV'
     createCV(title, sampleData)

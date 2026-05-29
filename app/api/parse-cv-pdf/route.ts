@@ -1,4 +1,15 @@
-import { CVData, Education, Experience } from '@/lib/types'
+import {
+  Award,
+  CVData,
+  Certification,
+  Education,
+  Experience,
+  Language,
+  ProfessionalLink,
+  Project,
+  Publication,
+  Volunteering
+} from '@/lib/types'
 
 export const maxDuration = 60
 
@@ -28,6 +39,55 @@ interface ParsedEducation {
   year?: string
 }
 
+interface ParsedProject {
+  name?: string
+  role?: string
+  technologies?: string
+  date?: string
+  url?: string
+  description?: string
+}
+
+interface ParsedCertification {
+  name?: string
+  issuer?: string
+  date?: string
+  url?: string
+}
+
+interface ParsedLanguage {
+  name?: string
+  proficiency?: string
+}
+
+interface ParsedAward {
+  title?: string
+  issuer?: string
+  date?: string
+  description?: string
+}
+
+interface ParsedPublication {
+  title?: string
+  publisher?: string
+  date?: string
+  url?: string
+  description?: string
+}
+
+interface ParsedVolunteering {
+  organization?: string
+  role?: string
+  startDate?: string
+  endDate?: string
+  description?: string
+}
+
+interface ParsedProfessionalLink {
+  label?: string
+  url?: string
+}
+
 interface ParsedCVPayload {
   personalInfo?: {
     name?: string
@@ -40,6 +100,13 @@ interface ParsedCVPayload {
   experience?: ParsedExperience[]
   education?: ParsedEducation[]
   skills?: string[]
+  projects?: ParsedProject[]
+  certifications?: ParsedCertification[]
+  languages?: ParsedLanguage[]
+  awards?: ParsedAward[]
+  publications?: ParsedPublication[]
+  volunteering?: ParsedVolunteering[]
+  links?: ParsedProfessionalLink[]
 }
 
 const CV_EXTRACTION_PROMPT = [
@@ -52,7 +119,14 @@ const CV_EXTRACTION_PROMPT = [
   '  "personalInfo": { "name": "", "title": "", "email": "", "phone": "", "location": "", "summary": "" },',
   '  "experience": [{ "company": "", "role": "", "startDate": "", "endDate": "", "description": "" }],',
   '  "education": [{ "school": "", "degree": "", "year": "" }],',
-  '  "skills": [""]',
+  '  "skills": [""],',
+  '  "projects": [{ "name": "", "role": "", "technologies": "", "date": "", "url": "", "description": "" }],',
+  '  "certifications": [{ "name": "", "issuer": "", "date": "", "url": "" }],',
+  '  "languages": [{ "name": "", "proficiency": "" }],',
+  '  "awards": [{ "title": "", "issuer": "", "date": "", "description": "" }],',
+  '  "publications": [{ "title": "", "publisher": "", "date": "", "url": "", "description": "" }],',
+  '  "volunteering": [{ "organization": "", "role": "", "startDate": "", "endDate": "", "description": "" }],',
+  '  "links": [{ "label": "", "url": "" }]',
   '}',
   '',
   'For experience descriptions, keep concise achievement-oriented bullet lines separated by newlines.',
@@ -96,6 +170,76 @@ function normalizeParsedCV(payload: ParsedCVPayload): Omit<CVData, 'metadata'> {
     ? payload.skills.map((skill) => asString(skill)).filter(Boolean)
     : []
 
+  const projects: Project[] = Array.isArray(payload.projects)
+    ? payload.projects.map((item, index) => ({
+        id: `${now}-project-${index}`,
+        name: asString(item.name),
+        role: asString(item.role),
+        technologies: asString(item.technologies),
+        date: asString(item.date),
+        url: asString(item.url),
+        description: asString(item.description)
+      })).filter((item) => item.name || item.description || item.technologies)
+    : []
+
+  const certifications: Certification[] = Array.isArray(payload.certifications)
+    ? payload.certifications.map((item, index) => ({
+        id: `${now}-cert-${index}`,
+        name: asString(item.name),
+        issuer: asString(item.issuer),
+        date: asString(item.date),
+        url: asString(item.url)
+      })).filter((item) => item.name || item.issuer)
+    : []
+
+  const languages: Language[] = Array.isArray(payload.languages)
+    ? payload.languages.map((item, index) => ({
+        id: `${now}-lang-${index}`,
+        name: asString(item.name),
+        proficiency: asString(item.proficiency)
+      })).filter((item) => item.name)
+    : []
+
+  const awards: Award[] = Array.isArray(payload.awards)
+    ? payload.awards.map((item, index) => ({
+        id: `${now}-award-${index}`,
+        title: asString(item.title),
+        issuer: asString(item.issuer),
+        date: asString(item.date),
+        description: asString(item.description)
+      })).filter((item) => item.title || item.description)
+    : []
+
+  const publications: Publication[] = Array.isArray(payload.publications)
+    ? payload.publications.map((item, index) => ({
+        id: `${now}-pub-${index}`,
+        title: asString(item.title),
+        publisher: asString(item.publisher),
+        date: asString(item.date),
+        url: asString(item.url),
+        description: asString(item.description)
+      })).filter((item) => item.title || item.publisher)
+    : []
+
+  const volunteering: Volunteering[] = Array.isArray(payload.volunteering)
+    ? payload.volunteering.map((item, index) => ({
+        id: `${now}-vol-${index}`,
+        organization: asString(item.organization),
+        role: asString(item.role),
+        startDate: asString(item.startDate),
+        endDate: asString(item.endDate),
+        description: asString(item.description)
+      })).filter((item) => item.organization || item.role || item.description)
+    : []
+
+  const links: ProfessionalLink[] = Array.isArray(payload.links)
+    ? payload.links.map((item, index) => ({
+        id: `${now}-link-${index}`,
+        label: asString(item.label),
+        url: asString(item.url)
+      })).filter((item) => item.label || item.url)
+    : []
+
   return {
     personalInfo: {
       name: asString(payload.personalInfo?.name),
@@ -119,7 +263,14 @@ function normalizeParsedCV(payload: ParsedCVPayload): Omit<CVData, 'metadata'> {
       degree: '',
       year: ''
     }],
-    skills
+    skills,
+    projects,
+    certifications,
+    languages,
+    awards,
+    publications,
+    volunteering,
+    links
   }
 }
 

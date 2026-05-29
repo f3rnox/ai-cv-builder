@@ -43,6 +43,8 @@ export async function POST(req: Request) {
       systemPrompt += " Write a professional summary based on the provided notes. Make it concise, impactful, and written in the first person (implied, avoiding 'I' where possible). Output ONLY the summary text.";
     } else if (type === 'experience') {
       systemPrompt += " Rewrite the provided work experience into professional, impactful bullet points. Use strong action verbs. Output ONLY the bullet points, formatted with markdown bullets.";
+    } else if (type === 'project') {
+      systemPrompt += " Rewrite the provided project description into concise CV-ready bullet points. Emphasize ownership, technologies, and measurable impact. Output ONLY the bullet points, formatted with markdown bullets.";
     } else {
       systemPrompt += " Enhance the provided text to be more professional and suitable for a CV. Output ONLY the enhanced text.";
     }

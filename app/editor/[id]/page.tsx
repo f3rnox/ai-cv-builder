@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { CV, CVData } from '@/lib/types'
 import getCVById from '@/lib/getCVById'
 import saveCV from '@/lib/saveCV'
+import { createEmptyCVData, normalizeCVData } from '@/lib/cvDefaults'
 import {
   Cog6ToothIcon as Settings,
   PrinterIcon as Printer,
@@ -66,6 +67,7 @@ export default function EditorPage({ params }: EditorPageProps) {
   const [isRenaming, setIsRenaming] = useState<boolean>(false)
   const [newTitle, setNewTitle] = useState<string>('')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingSaveRef = useRef<CV | null>(null)
   const deferredCVData = useDeferredValue(cv?.data)
@@ -176,46 +178,85 @@ export default function EditorPage({ params }: EditorPageProps) {
   }
 
   const confirmClear = () => {
-    const initialData: CVData = {
-      personalInfo: {
-        name: '',
-        title: '',
-        email: '',
-        phone: '',
-        location: '',
-        summary: ''
-      },
-      experience: [
-        {
-          id: '1',
-          company: '',
-          role: '',
-          startDate: '',
-          endDate: '',
-          description: ''
-        }
-      ],
-      education: [
-        {
-          id: '1',
-          school: '',
-          degree: '',
-          year: ''
-        }
-      ],
-      skills: [],
+    const initialData: CVData = createEmptyCVData({
       metadata: {
         template: 'classic',
         accentColor: getActivePalette().primary,
         fontFamily: 'sans'
       }
-    }
+    })
     handleDataChange(initialData)
     setShowResetModal(false)
   }
 
-  const handlePrint = () => {
-    globalThis.print()
+  const getDownloadBaseName = () => {
+    const sourceName = cv?.title || cv?.data.personalInfo.name || 'cv'
+    return sourceName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'cv'
+  }
+
+  const handleDownloadPdf = async () => {
+    if (!cv || isGeneratingPdf) return
+
+    const printableArea = document.getElementById('cv-printable-area')
+    if (!printableArea) return
+
+    flushPendingSave()
+    setIsGeneratingPdf(true)
+    let shouldRestoreDarkClass = false
+
+    try {
+      const [{ toCanvas }, { jsPDF }] = await Promise.all([
+        import('html-to-image'),
+        import('jspdf')
+      ])
+      shouldRestoreDarkClass = document.documentElement.classList.contains('dark')
+      document.documentElement.classList.remove('dark')
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+
+      const canvas = await toCanvas(printableArea, {
+        backgroundColor: '#ffffff',
+        cacheBust: true,
+        pixelRatio: 2,
+        style: {
+          backgroundColor: '#ffffff',
+          color: '#111111'
+        }
+      })
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      })
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const imageWidth = pageWidth
+      const imageHeight = (canvas.height * imageWidth) / canvas.width
+      const imageData = canvas.toDataURL('image/png')
+
+      let yPosition = 0
+      let remainingHeight = imageHeight
+
+      pdf.addImage(imageData, 'PNG', 0, yPosition, imageWidth, imageHeight)
+      remainingHeight -= pageHeight
+
+      while (remainingHeight > 0.5) {
+        yPosition -= pageHeight
+        pdf.addPage()
+        pdf.addImage(imageData, 'PNG', 0, yPosition, imageWidth, imageHeight)
+        remainingHeight -= pageHeight
+      }
+
+      pdf.save(`${getDownloadBaseName()}.pdf`)
+    } catch (error) {
+      console.error('Failed to generate PDF', error)
+      alert('Failed to generate the PDF. Please try again.')
+    } finally {
+      if (shouldRestoreDarkClass) {
+        document.documentElement.classList.add('dark')
+      }
+      setIsGeneratingPdf(false)
+    }
   }
 
   const handleExportJSON = () => {
@@ -226,8 +267,7 @@ export default function EditorPage({ params }: EditorPageProps) {
     const downloadAnchor = document.createElement('a')
     downloadAnchor.setAttribute('href', jsonString)
     
-    const formattedName = cv.title.trim().toLowerCase().replace(/\s+/g, '_') || 'cv'
-    downloadAnchor.setAttribute('download', `${formattedName}_backup.json`)
+    downloadAnchor.setAttribute('download', `${getDownloadBaseName()}_backup.json`)
     document.body.appendChild(downloadAnchor)
     downloadAnchor.click()
     downloadAnchor.remove()
@@ -253,7 +293,7 @@ export default function EditorPage({ params }: EditorPageProps) {
                 fontFamily: 'serif'
               }
             }
-            handleDataChange(parsed)
+            handleDataChange(normalizeCVData(parsed))
           } else {
             alert('Invalid backup file format. Make sure it is a valid AI CV Builder JSON.')
           }
@@ -384,7 +424,7 @@ export default function EditorPage({ params }: EditorPageProps) {
 
       <aside
         aria-hidden={!isPreviewOpen}
-        className={`fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden border-l border-gray-100 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-gray-800 dark:bg-gray-900 md:w-[min(1120px,calc(100vw-48px))] print:static print:z-auto print:block print:h-auto print:w-full print:translate-x-0 print:overflow-visible print:border-0 print:bg-white print:shadow-none ${
+        className={`fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden border-l border-gray-100 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-gray-800 dark:bg-gray-900 md:w-[min(1040px,calc(100vw-48px))] print:static print:z-auto print:block print:h-auto print:w-full print:translate-x-0 print:overflow-visible print:border-0 print:bg-white print:shadow-none ${
           isPreviewOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -427,11 +467,12 @@ export default function EditorPage({ params }: EditorPageProps) {
             </label>
 
             <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 text-xs font-bold bg-gray-900 hover:bg-gray-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="flex items-center gap-1.5 text-xs font-bold bg-gray-900 hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
             >
               <Printer width={13} height={13} />
-              Download PDF
+              {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
             </button>
           </div>
         </div>

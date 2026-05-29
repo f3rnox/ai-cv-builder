@@ -53,10 +53,53 @@ export function getSampleData(): CVData {
       'System Architecture',
       'Agile Methodology'
     ],
+    projects: [
+      {
+        id: 'sample-project-1',
+        name: 'Realtime Collaboration Platform',
+        role: 'Lead Engineer',
+        technologies: 'Next.js, TypeScript, WebSockets, PostgreSQL',
+        date: '2024',
+        url: 'https://example.com',
+        description: '- Built a shared workspace with live document editing, presence, and activity feeds.\n- Reduced collaboration latency by optimizing socket fan-out and client state reconciliation.'
+      }
+    ],
+    certifications: [
+      {
+        id: 'sample-cert-1',
+        name: 'AWS Certified Solutions Architect',
+        issuer: 'Amazon Web Services',
+        date: '2023',
+        url: ''
+      }
+    ],
+    languages: [
+      {
+        id: 'sample-lang-1',
+        name: 'English',
+        proficiency: 'Native'
+      }
+    ],
+    awards: [],
+    publications: [],
+    volunteering: [],
+    links: [
+      {
+        id: 'sample-link-1',
+        label: 'Portfolio',
+        url: 'https://alexrivera.dev'
+      },
+      {
+        id: 'sample-link-2',
+        label: 'GitHub',
+        url: 'https://github.com/alexrivera'
+      }
+    ],
     metadata: {
       template: 'modern',
       accentColor: '#3b82f6',
-      fontFamily: 'sans'
+      fontFamily: 'sans',
+      sectionOrder: ['summary', 'skills', 'experience', 'projects', 'education', 'certifications', 'languages', 'awards', 'publications', 'volunteering', 'links']
     }
   }
 }

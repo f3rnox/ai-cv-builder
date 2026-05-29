@@ -1,8 +1,23 @@
 'use client'
 
-import { CVData, Experience, Education, CVMetadata, CVTemplate } from '@/lib/types'
+import {
+  Award,
+  CVData,
+  CVMetadata,
+  CVSectionId,
+  CVTemplate,
+  Certification,
+  Education,
+  Experience,
+  Language,
+  ProfessionalLink,
+  Project,
+  Publication,
+  Volunteering
+} from '@/lib/types'
 import { getProviderApiKey, getProviderModel, getSettings } from '@/lib/settings'
 import { getActivePalette, resolveAppAccentColor } from '@/lib/displaySettings'
+import { DEFAULT_SECTION_ORDER, SECTION_LABELS, normalizeSectionOrder } from '@/lib/cvDefaults'
 import {
   SparklesIcon,
   ArrowUpTrayIcon,
@@ -17,7 +32,10 @@ import {
   Cog6ToothIcon,
   PaintBrushIcon,
   CheckIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  FolderIcon,
+  EllipsisHorizontalCircleIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline'
 import { useRef, useState, KeyboardEvent, ChangeEvent } from 'react'
 
@@ -51,6 +69,50 @@ const TEMPLATE_OPTIONS = [
   { id: 'technical', title: 'Technical Matrix', desc: 'Dense, skills-forward engineering layout' }
 ] satisfies Array<{ id: CVTemplate; title: string; desc: string }>
 
+const LANGUAGE_PROFICIENCY_OPTIONS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Native']
+
+type ActiveTab = 'personal' | 'experience' | 'education' | 'skills' | 'projects' | 'more' | 'design'
+type SuggestionTarget = 'summary' | 'experience' | 'project'
+
+interface PendingSuggestion {
+  type: SuggestionTarget
+  id?: string
+  text: string
+}
+
+function createId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+}
+
+function isValidPhone(phone: string) {
+  const cleaned = phone.replace(/[^\d+]/g, '')
+  return cleaned.length >= 7 && /^[+\d]+$/.test(cleaned)
+}
+
+function parseYear(value: string): number | null {
+  const match = value.match(/\b(19|20)\d{2}\b/)
+  return match ? Number(match[0]) : null
+}
+
+function hasDateInconsistency(startDate: string, endDate: string) {
+  const startYear = parseYear(startDate)
+  const endYear = parseYear(endDate)
+  if (!startYear || !endYear || /present|current|now/i.test(endDate)) return false
+  return startYear > endYear
+}
+
+function hasMeaningfulExperience(exp: Experience) {
+  return Boolean(exp.company.trim() || exp.role.trim() || exp.description.trim())
+}
+
+function hasEmptyExperienceEntry(exp: Experience) {
+  return !exp.company.trim() || !exp.role.trim() || !exp.description.trim()
+}
+
 /**
  * CVForm component provides an interactive, tabbed editing interface for
  * updating personal details, experiences, education, skills, and layout design.
@@ -60,9 +122,10 @@ const TEMPLATE_OPTIONS = [
  * @returns {JSX.Element} The rendered form interface.
  */
 export default function CVForm({ data, onChange, onClear, onPreview }: CVFormProps) {
-  const [activeTab, setActiveTab] = useState<'personal' | 'experience' | 'education' | 'skills' | 'design'>('personal')
+  const [activeTab, setActiveTab] = useState<ActiveTab>('personal')
   const [skillInput, setSkillInput] = useState('')
   const [enhancingField, setEnhancingField] = useState<{ type: string; id?: string } | null>(null)
+  const [pendingSuggestion, setPendingSuggestion] = useState<PendingSuggestion | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isParsingPdf, setIsParsingPdf] = useState(false)
   const pdfInputRef = useRef<HTMLInputElement | null>(null)
@@ -74,7 +137,7 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
 
   const isEnhancing = enhancingField !== null
 
-  const handleEnhance = async (text: string, type: string, id?: string) => {
+  const handleEnhance = async (text: string, type: SuggestionTarget, id?: string) => {
     if (!text.trim()) return
     
     const settings = getSettings()
@@ -137,17 +200,60 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
       const refinedText = (await response.text()).trim()
       if (!refinedText) return
 
-      if (type === 'summary') {
-        updatePersonalInfo('summary', refinedText)
-      } else if (type === 'experience' && id) {
-        updateExperience(id, 'description', refinedText)
-      }
+      setPendingSuggestion({ type, id, text: refinedText })
       setErrorMsg(null)
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : 'Failed to refine text.')
     } finally {
       setEnhancingField(null)
     }
+  }
+
+  const acceptSuggestion = () => {
+    if (!pendingSuggestion) return
+    if (pendingSuggestion.type === 'summary') {
+      updatePersonalInfo('summary', pendingSuggestion.text)
+    } else if (pendingSuggestion.type === 'experience' && pendingSuggestion.id) {
+      updateExperience(pendingSuggestion.id, 'description', pendingSuggestion.text)
+    } else if (pendingSuggestion.type === 'project' && pendingSuggestion.id) {
+      updateProject(pendingSuggestion.id, 'description', pendingSuggestion.text)
+    }
+    setPendingSuggestion(null)
+  }
+
+  const rejectSuggestion = () => {
+    setPendingSuggestion(null)
+  }
+
+  const renderSuggestionReview = (type: SuggestionTarget, id?: string) => {
+    if (!pendingSuggestion || pendingSuggestion.type !== type || pendingSuggestion.id !== id) return null
+
+    return (
+      <div className="mt-2 rounded-xl border border-blue-100 bg-blue-50/60 p-3 dark:border-blue-900/50 dark:bg-blue-950/20">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="text-xs font-bold text-blue-700 dark:text-blue-300">AI suggestion</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={rejectSuggestion}
+              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-bold text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              Reject
+            </button>
+            <button
+              type="button"
+              onClick={acceptSuggestion}
+              className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              Accept
+            </button>
+          </div>
+        </div>
+        <pre className="whitespace-pre-wrap rounded-lg bg-white p-3 text-xs leading-relaxed text-gray-700 dark:bg-gray-900 dark:text-gray-300">
+          {pendingSuggestion.text}
+        </pre>
+      </div>
+    )
   }
 
   const handlePdfImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -294,6 +400,151 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
     onChange({ ...data, education: updated })
   }
 
+  const updateProject = (id: string, field: keyof Project, value: string) => {
+    onChange({
+      ...data,
+      projects: data.projects.map((project) =>
+        project.id === id ? { ...project, [field]: value } : project
+      )
+    })
+  }
+
+  const addProject = () => {
+    const newProject: Project = {
+      id: createId('project'),
+      name: '',
+      role: '',
+      technologies: '',
+      date: '',
+      url: '',
+      description: ''
+    }
+    onChange({ ...data, projects: [...data.projects, newProject] })
+  }
+
+  const removeProject = (id: string) => {
+    onChange({ ...data, projects: data.projects.filter((project) => project.id !== id) })
+  }
+
+  const moveProject = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= data.projects.length) return
+    const updated = [...data.projects]
+    const temp = updated[index]
+    updated[index] = updated[newIndex]
+    updated[newIndex] = temp
+    onChange({ ...data, projects: updated })
+  }
+
+  const updateCertification = (id: string, field: keyof Certification, value: string) => {
+    onChange({
+      ...data,
+      certifications: data.certifications.map((item) => item.id === id ? { ...item, [field]: value } : item)
+    })
+  }
+
+  const addCertification = () => {
+    onChange({
+      ...data,
+      certifications: [...data.certifications, { id: createId('cert'), name: '', issuer: '', date: '', url: '' }]
+    })
+  }
+
+  const removeCertification = (id: string) => {
+    onChange({ ...data, certifications: data.certifications.filter((item) => item.id !== id) })
+  }
+
+  const updateLanguage = (id: string, field: keyof Language, value: string) => {
+    onChange({
+      ...data,
+      languages: data.languages.map((item) => item.id === id ? { ...item, [field]: value } : item)
+    })
+  }
+
+  const addLanguage = () => {
+    onChange({ ...data, languages: [...data.languages, { id: createId('lang'), name: '', proficiency: '' }] })
+  }
+
+  const removeLanguage = (id: string) => {
+    onChange({ ...data, languages: data.languages.filter((item) => item.id !== id) })
+  }
+
+  const moveLanguage = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= data.languages.length) return
+    const updated = [...data.languages]
+    const temp = updated[index]
+    updated[index] = updated[newIndex]
+    updated[newIndex] = temp
+    onChange({ ...data, languages: updated })
+  }
+
+  const updateAward = (id: string, field: keyof Award, value: string) => {
+    onChange({
+      ...data,
+      awards: data.awards.map((item) => item.id === id ? { ...item, [field]: value } : item)
+    })
+  }
+
+  const addAward = () => {
+    onChange({ ...data, awards: [...data.awards, { id: createId('award'), title: '', issuer: '', date: '', description: '' }] })
+  }
+
+  const removeAward = (id: string) => {
+    onChange({ ...data, awards: data.awards.filter((item) => item.id !== id) })
+  }
+
+  const updatePublication = (id: string, field: keyof Publication, value: string) => {
+    onChange({
+      ...data,
+      publications: data.publications.map((item) => item.id === id ? { ...item, [field]: value } : item)
+    })
+  }
+
+  const addPublication = () => {
+    onChange({
+      ...data,
+      publications: [...data.publications, { id: createId('pub'), title: '', publisher: '', date: '', url: '', description: '' }]
+    })
+  }
+
+  const removePublication = (id: string) => {
+    onChange({ ...data, publications: data.publications.filter((item) => item.id !== id) })
+  }
+
+  const updateVolunteering = (id: string, field: keyof Volunteering, value: string) => {
+    onChange({
+      ...data,
+      volunteering: data.volunteering.map((item) => item.id === id ? { ...item, [field]: value } : item)
+    })
+  }
+
+  const addVolunteering = () => {
+    onChange({
+      ...data,
+      volunteering: [...data.volunteering, { id: createId('vol'), organization: '', role: '', startDate: '', endDate: '', description: '' }]
+    })
+  }
+
+  const removeVolunteering = (id: string) => {
+    onChange({ ...data, volunteering: data.volunteering.filter((item) => item.id !== id) })
+  }
+
+  const updateLink = (id: string, field: keyof ProfessionalLink, value: string) => {
+    onChange({
+      ...data,
+      links: data.links.map((item) => item.id === id ? { ...item, [field]: value } : item)
+    })
+  }
+
+  const addLink = () => {
+    onChange({ ...data, links: [...data.links, { id: createId('link'), label: '', url: '' }] })
+  }
+
+  const removeLink = (id: string) => {
+    onChange({ ...data, links: data.links.filter((item) => item.id !== id) })
+  }
+
   const handleAddSkill = () => {
     const clean = skillInput.trim()
     if (!clean) return
@@ -323,11 +574,12 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
     })
   }
 
-  const updateMetadata = (field: keyof CVMetadata, value: string) => {
+  const updateMetadata = <K extends keyof CVMetadata>(field: K, value: CVMetadata[K]) => {
     const currentMetadata: CVMetadata = data.metadata || {
       template: 'classic',
       accentColor: appPalette.primary,
-      fontFamily: 'serif'
+      fontFamily: 'serif',
+      sectionOrder: DEFAULT_SECTION_ORDER
     }
     onChange({
       ...data,
@@ -336,6 +588,18 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
         [field]: value
       }
     })
+  }
+
+  const moveSection = (sectionId: CVSectionId, direction: 'up' | 'down') => {
+    const sectionOrder = normalizeSectionOrder(data.metadata?.sectionOrder)
+    const index = sectionOrder.indexOf(sectionId)
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    if (index < 0 || newIndex < 0 || newIndex >= sectionOrder.length) return
+    const updated = [...sectionOrder]
+    const temp = updated[index]
+    updated[index] = updated[newIndex]
+    updated[newIndex] = temp
+    updateMetadata('sectionOrder', updated)
   }
 
   // Completeness check
@@ -355,10 +619,29 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
     if (hasEdu) score += 10
     
     if (data.skills.length > 0) score += 5
-    return score
+    if (data.projects.some((project) => project.name.trim() || project.description.trim())) score += 5
+    return Math.min(score, 100)
   }
 
   const completeness = calculateCompleteness()
+  const normalizedSectionOrder = normalizeSectionOrder(data.metadata?.sectionOrder)
+  const duplicateSkills = Array.from(
+    new Set(
+      data.skills
+        .map((skill) => skill.trim().toLowerCase())
+        .filter((skill, index, all) => skill && all.indexOf(skill) !== index)
+    )
+  )
+  const validationIssues = [
+    !data.personalInfo.email.trim() ? 'Email is missing.' : null,
+    data.personalInfo.email.trim() && !isValidEmail(data.personalInfo.email) ? 'Email format looks invalid.' : null,
+    data.personalInfo.phone.trim() && !isValidPhone(data.personalInfo.phone) ? 'Phone format looks invalid.' : null,
+    data.personalInfo.summary.length > 700 ? 'Summary is long; aim for 3-5 tight sentences.' : null,
+    duplicateSkills.length > 0 ? `Repeated skills: ${duplicateSkills.join(', ')}.` : null,
+    data.experience.some((exp) => hasMeaningfulExperience(exp) && hasEmptyExperienceEntry(exp)) ? 'One or more experience entries are missing company, role, or achievements.' : null,
+    data.experience.some((exp) => hasDateInconsistency(exp.startDate, exp.endDate)) ? 'One or more experience date ranges look inconsistent.' : null,
+    data.volunteering.some((item) => hasDateInconsistency(item.startDate, item.endDate)) ? 'One or more volunteering date ranges look inconsistent.' : null
+  ].filter((issue): issue is string => Boolean(issue))
 
   return (
     <div className="flex flex-col h-full w-full bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
@@ -488,6 +771,36 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
         </button>
 
         <button
+          onClick={() => setActiveTab('projects')}
+          className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium border-b-2 transition-all shrink-0 ${
+            activeTab === 'projects'
+              ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400 bg-blue-50/10'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50/50'
+          }`}
+        >
+          <FolderIcon className="h-4 w-4" />
+          <span>Projects</span>
+          {data.projects.some((project) => project.name.trim() || project.description.trim()) && (
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('more')}
+          className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium border-b-2 transition-all shrink-0 ${
+            activeTab === 'more'
+              ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400 bg-blue-50/10'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50/50'
+          }`}
+        >
+          <EllipsisHorizontalCircleIcon className="h-4 w-4" />
+          <span>More</span>
+          {[data.certifications, data.languages, data.awards, data.publications, data.volunteering, data.links].some((items) => items.length > 0) && (
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+          )}
+        </button>
+
+        <button
           onClick={() => setActiveTab('design')}
           className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium border-b-2 transition-all shrink-0 ${
             activeTab === 'design'
@@ -507,6 +820,17 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
           <div className="mb-5 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 p-4 rounded-xl border border-red-100 dark:border-red-900/50 text-sm flex items-start gap-2.5">
             <span className="font-bold shrink-0">⚠️</span>
             <div>{errorMsg}</div>
+          </div>
+        )}
+
+        {validationIssues.length > 0 && (
+          <div className="mb-5 rounded-xl border border-amber-100 bg-amber-50/60 p-4 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
+            <div className="mb-2 text-xs font-bold uppercase tracking-wide">Smart validation</div>
+            <ul className="list-disc space-y-1 pl-5 text-xs leading-relaxed">
+              {validationIssues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -596,6 +920,7 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
                 value={data.personalInfo.summary}
                 onChange={(e) => updatePersonalInfo('summary', e.target.value)}
               />
+              {renderSuggestionReview('summary')}
             </div>
           </div>
         )}
@@ -723,6 +1048,7 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
                         value={exp.description}
                         onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
                       />
+                      {renderSuggestionReview('experience', exp.id)}
                     </div>
 
                   </div>
@@ -885,7 +1211,234 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
           </div>
         )}
 
-        {/* 5. DESIGN & TEMPLATES */}
+        {/* 5. PROJECTS */}
+        {activeTab === 'projects' && (
+          <div className="space-y-6 transition duration-200 ease-out">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Projects</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Show shipped work, portfolio projects, and technical initiatives</p>
+              </div>
+              <button
+                onClick={addProject}
+                className="flex items-center gap-1.5 text-xs font-semibold bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-3.5 py-1.5 rounded-lg shadow-sm transition-colors"
+              >
+                <PlusIcon className="h-4 w-4" /> Add Project
+              </button>
+            </div>
+
+            {data.projects.length === 0 ? (
+              <div className="text-center py-12 border border-dashed rounded-xl border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center">
+                <FolderIcon className="h-8 w-8 text-gray-300 dark:text-gray-600 mb-3" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">No projects added yet.</p>
+                <button onClick={addProject} className="mt-3 text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+                  Add your first project
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {data.projects.map((project, index) => (
+                  <div key={project.id} className="relative flex flex-col gap-4 rounded-xl border border-gray-100 bg-gray-50/40 p-5 transition-all hover:shadow-md/5 dark:border-gray-800/80 dark:bg-gray-800/20">
+                    <div className="absolute right-4 top-4 flex items-center gap-1">
+                      <button onClick={() => moveProject(index, 'up')} disabled={index === 0} className="p-1 text-gray-400 transition-colors hover:text-gray-700 disabled:opacity-20 dark:text-gray-500 dark:hover:text-gray-300" title="Move Up">
+                        <ArrowUpIcon className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => moveProject(index, 'down')} disabled={index === data.projects.length - 1} className="p-1 text-gray-400 transition-colors hover:text-gray-700 disabled:opacity-20 dark:text-gray-500 dark:hover:text-gray-300" title="Move Down">
+                        <ArrowDownIcon className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => removeProject(project.id)} className="rounded p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-500 dark:hover:bg-red-950/50 dark:hover:text-red-400" title="Delete Project">
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="mr-20 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Project Name</label>
+                        <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-gray-100 transition-all placeholder-gray-400" placeholder="e.g. Analytics Platform" value={project.name} onChange={(e) => updateProject(project.id, 'name', e.target.value)} />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Role</label>
+                        <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-gray-100 transition-all placeholder-gray-400" placeholder="e.g. Lead Developer" value={project.role} onChange={(e) => updateProject(project.id, 'role', e.target.value)} />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Technologies</label>
+                        <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-gray-100 transition-all placeholder-gray-400" placeholder="e.g. Next.js, PostgreSQL, AWS" value={project.technologies} onChange={(e) => updateProject(project.id, 'technologies', e.target.value)} />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Date</label>
+                          <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-gray-100 transition-all placeholder-gray-400" placeholder="e.g. 2024" value={project.date} onChange={(e) => updateProject(project.id, 'date', e.target.value)} />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">URL</label>
+                          <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-gray-100 transition-all placeholder-gray-400" placeholder="https://..." value={project.url} onChange={(e) => updateProject(project.id, 'url', e.target.value)} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 border-t border-gray-100 pt-2 dark:border-gray-800">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Project Impact</label>
+                        <button
+                          onClick={() => handleEnhance(project.description, 'project', project.id)}
+                          disabled={isEnhancing || !project.description.trim()}
+                          className="flex items-center gap-1.5 text-xs bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-3 py-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-40 transition-all font-medium"
+                        >
+                          {isEnhancing && enhancingField?.id === project.id ? <ArrowPathIcon className="h-3 w-3 animate-spin" /> : <SparklesIcon className="h-3 w-3" />}
+                          {isEnhancing && enhancingField?.id === project.id ? 'Enhancing...' : 'AI Rewrite'}
+                        </button>
+                      </div>
+                      <textarea className="px-3 py-2 border rounded-lg h-28 resize-none border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-gray-100 transition-all placeholder-gray-400 leading-relaxed" placeholder="Describe the problem, your contribution, and measurable impact." value={project.description} onChange={(e) => updateProject(project.id, 'description', e.target.value)} />
+                      {renderSuggestionReview('project', project.id)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 6. EXTRA SECTIONS */}
+        {activeTab === 'more' && (
+          <div className="space-y-7 transition duration-200 ease-out">
+            <div>
+              <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Additional Sections</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Add credentials and supporting details when they strengthen the CV</p>
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-gray-100 p-4 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100">Certifications</h4>
+                <button onClick={addCertification} className="text-xs font-bold text-blue-600 hover:underline dark:text-blue-400">Add</button>
+              </div>
+              {data.certifications.map((item) => (
+                <div key={item.id} className="grid grid-cols-1 gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40 sm:grid-cols-4">
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Certification" value={item.name} onChange={(e) => updateCertification(item.id, 'name', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Issuer" value={item.issuer} onChange={(e) => updateCertification(item.id, 'issuer', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Date" value={item.date} onChange={(e) => updateCertification(item.id, 'date', e.target.value)} />
+                  <div className="flex gap-2">
+                    <input className="min-w-0 flex-1 px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="URL" value={item.url} onChange={(e) => updateCertification(item.id, 'url', e.target.value)} />
+                    <button onClick={() => removeCertification(item.id)} className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"><TrashIcon className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-gray-100 p-4 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100">Languages</h4>
+                <button onClick={addLanguage} className="text-xs font-bold text-blue-600 hover:underline dark:text-blue-400">Add</button>
+              </div>
+              {data.languages.map((item, index) => (
+                <div key={item.id} className="grid grid-cols-1 gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40 sm:grid-cols-[1fr_1fr_auto]">
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Language" value={item.name} onChange={(e) => updateLanguage(item.id, 'name', e.target.value)} />
+                  <div className="relative">
+                    <select
+                      className="w-full appearance-none px-3 py-2 pr-9 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none"
+                      value={item.proficiency}
+                      onChange={(e) => updateLanguage(item.id, 'proficiency', e.target.value)}
+                    >
+                      <option value="">Proficiency</option>
+                      {LANGUAGE_PROFICIENCY_OPTIONS.map((level) => (
+                        <option key={level} value={level}>
+                          {level}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => moveLanguage(index, 'up')}
+                      disabled={index === 0}
+                      className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700/50"
+                      title="Move Up"
+                    >
+                      <ArrowUpIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => moveLanguage(index, 'down')}
+                      disabled={index === data.languages.length - 1}
+                      className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700/50"
+                      title="Move Down"
+                    >
+                      <ArrowDownIcon className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => removeLanguage(item.id)} className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"><TrashIcon className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-gray-100 p-4 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100">Awards</h4>
+                <button onClick={addAward} className="text-xs font-bold text-blue-600 hover:underline dark:text-blue-400">Add</button>
+              </div>
+              {data.awards.map((item) => (
+                <div key={item.id} className="grid grid-cols-1 gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40 sm:grid-cols-4">
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Award" value={item.title} onChange={(e) => updateAward(item.id, 'title', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Issuer" value={item.issuer} onChange={(e) => updateAward(item.id, 'issuer', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Date" value={item.date} onChange={(e) => updateAward(item.id, 'date', e.target.value)} />
+                  <button onClick={() => removeAward(item.id)} className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"><TrashIcon className="h-4 w-4" /></button>
+                  <textarea className="sm:col-span-4 px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Description" value={item.description} onChange={(e) => updateAward(item.id, 'description', e.target.value)} />
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-gray-100 p-4 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100">Publications</h4>
+                <button onClick={addPublication} className="text-xs font-bold text-blue-600 hover:underline dark:text-blue-400">Add</button>
+              </div>
+              {data.publications.map((item) => (
+                <div key={item.id} className="grid grid-cols-1 gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40 sm:grid-cols-5">
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Title" value={item.title} onChange={(e) => updatePublication(item.id, 'title', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Publisher" value={item.publisher} onChange={(e) => updatePublication(item.id, 'publisher', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Date" value={item.date} onChange={(e) => updatePublication(item.id, 'date', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="URL" value={item.url} onChange={(e) => updatePublication(item.id, 'url', e.target.value)} />
+                  <button onClick={() => removePublication(item.id)} className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"><TrashIcon className="h-4 w-4" /></button>
+                  <textarea className="sm:col-span-5 px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Description" value={item.description} onChange={(e) => updatePublication(item.id, 'description', e.target.value)} />
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-gray-100 p-4 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100">Volunteering</h4>
+                <button onClick={addVolunteering} className="text-xs font-bold text-blue-600 hover:underline dark:text-blue-400">Add</button>
+              </div>
+              {data.volunteering.map((item) => (
+                <div key={item.id} className="grid grid-cols-1 gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40 sm:grid-cols-4">
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Organization" value={item.organization} onChange={(e) => updateVolunteering(item.id, 'organization', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Role" value={item.role} onChange={(e) => updateVolunteering(item.id, 'role', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Start" value={item.startDate} onChange={(e) => updateVolunteering(item.id, 'startDate', e.target.value)} />
+                  <div className="flex gap-2">
+                    <input className="min-w-0 flex-1 px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="End" value={item.endDate} onChange={(e) => updateVolunteering(item.id, 'endDate', e.target.value)} />
+                    <button onClick={() => removeVolunteering(item.id)} className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"><TrashIcon className="h-4 w-4" /></button>
+                  </div>
+                  <textarea className="sm:col-span-4 px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Description" value={item.description} onChange={(e) => updateVolunteering(item.id, 'description', e.target.value)} />
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-gray-100 p-4 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100">Links</h4>
+                <button onClick={addLink} className="text-xs font-bold text-blue-600 hover:underline dark:text-blue-400">Add</button>
+              </div>
+              {data.links.map((item) => (
+                <div key={item.id} className="grid grid-cols-1 gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40 sm:grid-cols-[1fr_2fr_auto]">
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="Label" value={item.label} onChange={(e) => updateLink(item.id, 'label', e.target.value)} />
+                  <input className="px-3 py-2 border rounded-lg border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm outline-none" placeholder="https://..." value={item.url} onChange={(e) => updateLink(item.id, 'url', e.target.value)} />
+                  <button onClick={() => removeLink(item.id)} className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"><TrashIcon className="h-4 w-4" /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 7. DESIGN & TEMPLATES */}
         {activeTab === 'design' && (
           <div className="space-y-6 transition duration-200 ease-out">
             <div>
@@ -968,13 +1521,47 @@ export default function CVForm({ data, onChange, onClear, onPreview }: CVFormPro
 
             {/* Typography */}
             <div className="flex flex-col gap-2.5 pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Document Section Order</label>
+                <p className="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">Move sections up or down to match the target role.</p>
+              </div>
+              <div className="space-y-2 rounded-xl border border-gray-100 p-3 dark:border-gray-800">
+                {normalizedSectionOrder.map((sectionId, index) => (
+                  <div key={sectionId} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/40">
+                    <span className="text-xs font-bold text-gray-700 dark:text-gray-200">{SECTION_LABELS[sectionId]}</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => moveSection(sectionId, 'up')}
+                        disabled={index === 0}
+                        className="p-1 text-gray-400 transition-colors hover:text-gray-700 disabled:opacity-20 dark:text-gray-500 dark:hover:text-gray-300"
+                        title="Move Up"
+                      >
+                        <ArrowUpIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => moveSection(sectionId, 'down')}
+                        disabled={index === normalizedSectionOrder.length - 1}
+                        className="p-1 text-gray-400 transition-colors hover:text-gray-700 disabled:opacity-20 dark:text-gray-500 dark:hover:text-gray-300"
+                        title="Move Down"
+                      >
+                        <ArrowDownIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Typography */}
+            <div className="flex flex-col gap-2.5 pt-2 border-t border-gray-100 dark:border-gray-800">
               <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Typography Font Family</label>
               <div className="grid grid-cols-3 gap-3">
-                {[
+                {([
                   { id: 'serif', title: 'Serif Elegant', family: 'font-serif' },
                   { id: 'sans', title: 'Modern Sans', family: 'font-sans' },
                   { id: 'mono', title: 'Technical Mono', family: 'font-mono' }
-                ].map((font) => {
+                ] satisfies Array<{ id: CVMetadata['fontFamily']; title: string; family: string }>)
+                  .map((font) => {
                   const currentFont = data.metadata?.fontFamily || 'serif'
                   const isSelected = currentFont === font.id
                   return (

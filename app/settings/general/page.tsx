@@ -6,6 +6,7 @@ import saveCVs from '@/lib/saveCVs'
 import { applyDisplaySettings, DisplaySettings, getActivePalette, getDisplaySettings, saveDisplaySettings } from '@/lib/displaySettings'
 import { AppSettings, getSettings, saveSettings } from '@/lib/settings'
 import { CV, CVData } from '@/lib/types'
+import { normalizeCVData } from '@/lib/cvDefaults'
 import { ArrowDownTrayIcon, ArrowLeftIcon as ArrowLeft, ArrowUpTrayIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { ChangeEvent, useEffect, useRef, useState } from 'react'
@@ -161,7 +162,7 @@ export default function GeneralSettingsPage() {
         }
 
         if (hasCVDataShape(parsed)) {
-          const cvData = parsed
+          const cvData = normalizeCVData(parsed)
           if (!cvData.metadata) {
             cvData.metadata = {
               template: 'classic',

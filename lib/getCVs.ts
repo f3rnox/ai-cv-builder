@@ -1,5 +1,6 @@
 import { CV, CVData } from '@/lib/types'
 import { getActivePalette } from '@/lib/displaySettings'
+import { normalizeCVData } from '@/lib/cvDefaults'
 
 /**
  * Retrieves all saved CVs from local storage, handles schema migration from legacy single-CV data,
@@ -16,7 +17,12 @@ export default function getCVs(): CV[] {
   if (stored) {
     try {
       const cvs: CV[] = JSON.parse(stored)
-      return cvs.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      return cvs
+        .map((cv) => ({
+          ...cv,
+          data: normalizeCVData(cv.data)
+        }))
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     } catch (e) {
       console.error('Failed to parse saved CVs list:', e)
     }
@@ -41,10 +47,18 @@ export default function getCVs(): CV[] {
           experience: Array.isArray(parsed.experience) ? parsed.experience : [],
           education: Array.isArray(parsed.education) ? parsed.education : [],
           skills: Array.isArray(parsed.skills) ? parsed.skills : [],
+          projects: Array.isArray(parsed.projects) ? parsed.projects : [],
+          certifications: Array.isArray(parsed.certifications) ? parsed.certifications : [],
+          languages: Array.isArray(parsed.languages) ? parsed.languages : [],
+          awards: Array.isArray(parsed.awards) ? parsed.awards : [],
+          publications: Array.isArray(parsed.publications) ? parsed.publications : [],
+          volunteering: Array.isArray(parsed.volunteering) ? parsed.volunteering : [],
+          links: Array.isArray(parsed.links) ? parsed.links : [],
           metadata: {
             template: parsed.metadata?.template || 'classic',
             accentColor: parsed.metadata?.accentColor || getActivePalette().primary,
-            fontFamily: parsed.metadata?.fontFamily || 'serif'
+            fontFamily: parsed.metadata?.fontFamily || 'serif',
+            sectionOrder: parsed.metadata?.sectionOrder
           }
         }
 
