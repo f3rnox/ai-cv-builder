@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeftIcon as ArrowLeft, SwatchIcon as Palette } from '@heroicons/react/24/outline'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
+import SettingsNavSidebar from '@/components/SettingsNavSidebar'
 import { 
   DisplaySettings, 
   COLOR_PALETTES, 
@@ -102,26 +103,16 @@ export default function DisplaySettingsPage() {
         <ThemeSwitcher />
       </header>
 
-      <main className="flex-1 flex justify-center py-12 px-6">
-        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm p-8 w-full max-w-lg">
-          
-          {/* Subpage Tabs */}
+      <main className="flex-1 py-12 px-6">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 lg:flex-row lg:items-start">
+          <SettingsNavSidebar active="display" />
+
+          <section className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm p-8 w-full flex-1">
           <div className="border-b border-gray-100 dark:border-gray-800 pb-4 mb-6">
-            <h1 className="text-2xl font-black text-gray-800 dark:text-white mb-4">Settings</h1>
-            <div className="flex bg-gray-50/50 dark:bg-gray-950 p-1 rounded-xl border border-gray-200/50 dark:border-gray-800/80">
-              <Link
-                href="/settings"
-                className="flex-1 py-2.5 text-center text-xs font-semibold rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-              >
-                AI Keys
-              </Link>
-              <Link
-                href="/settings/display"
-                className="flex-1 py-2.5 text-center text-xs font-bold rounded-lg bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-xs border border-gray-100 dark:border-gray-800/30"
-              >
-                Display & Theme
-              </Link>
-            </div>
+            <h2 className="text-2xl font-black text-gray-800 dark:text-white">Display & Theme</h2>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Tune the application theme, accent palette, and document scale.
+            </p>
           </div>
 
           <div className="flex flex-col gap-6">
@@ -291,6 +282,7 @@ export default function DisplaySettingsPage() {
             </div>
 
           </div>
+          </section>
         </div>
       </main>
 

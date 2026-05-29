@@ -2,7 +2,17 @@ import { CVData, Education, Experience } from '@/lib/types'
 
 export const maxDuration = 60
 
-type Provider = 'openai' | 'google'
+type Provider = 'openai' | 'google' | 'anthropic'
+
+const DEFAULT_MODEL_BY_PROVIDER: Record<Provider, string> = {
+  openai: 'gpt-4o-mini',
+  google: 'gemini-2.5-pro',
+  anthropic: 'claude-sonnet-4-5-20250929'
+}
+
+function isDebugLoggingEnabled(value: unknown): boolean {
+  return value === true || value === 'true'
+}
 
 interface ParsedExperience {
   company?: string
@@ -156,7 +166,24 @@ function getGoogleText(payload: unknown): string {
     .join('\n') || ''
 }
 
-async function parseWithOpenAI(base64Pdf: string, filename: string, apiKey: string): Promise<string> {
+function getAnthropicText(payload: unknown): string {
+  if (typeof payload !== 'object' || payload === null) return ''
+
+  const response = payload as {
+    content?: Array<{
+      type?: unknown
+      text?: unknown
+    }>
+  }
+
+  return response.content
+    ?.filter((content) => content.type === 'text')
+    .map((content) => content.text)
+    .filter((text): text is string => typeof text === 'string')
+    .join('\n') || ''
+}
+
+async function parseWithOpenAI(base64Pdf: string, filename: string, apiKey: string, model: string): Promise<string> {
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
@@ -164,7 +191,7 @@ async function parseWithOpenAI(base64Pdf: string, filename: string, apiKey: stri
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model,
       input: [{
         role: 'user',
         content: [
@@ -194,9 +221,9 @@ async function parseWithOpenAI(base64Pdf: string, filename: string, apiKey: stri
   return getOpenAIText(payload)
 }
 
-async function parseWithGoogle(base64Pdf: string, apiKey: string): Promise<string> {
+async function parseWithGoogle(base64Pdf: string, apiKey: string, model: string): Promise<string> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: {
@@ -237,12 +264,58 @@ async function parseWithGoogle(base64Pdf: string, apiKey: string): Promise<strin
   return getGoogleText(payload)
 }
 
+async function parseWithAnthropic(base64Pdf: string, apiKey: string, model: string): Promise<string> {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4000,
+      system: 'You extract structured CV data and return only valid JSON.',
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: base64Pdf
+            }
+          },
+          {
+            type: 'text',
+            text: CV_EXTRACTION_PROMPT
+          }
+        ]
+      }]
+    })
+  })
+
+  const payload = await response.json()
+
+  if (!response.ok) {
+    const message = typeof payload?.error?.message === 'string'
+      ? payload.error.message
+      : 'Anthropic failed to parse the PDF.'
+    throw new Error(message)
+  }
+
+  return getAnthropicText(payload)
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData()
     const file = formData.get('file')
     const provider = formData.get('provider')
     const apiKey = formData.get('apiKey')
+    const requestedModel = formData.get('model')
+    const debugLogging = formData.get('debugLogging')
 
     if (!(file instanceof File)) {
       return Response.json({ error: 'A PDF file is required.' }, { status: 400 })
@@ -260,12 +333,34 @@ export async function POST(req: Request) {
       return Response.json({ error: 'API key is required. Please configure it in Settings.' }, { status: 400 })
     }
 
-    const selectedProvider: Provider = provider === 'google' ? 'google' : 'openai'
+    const selectedProvider: Provider = provider === 'google'
+      ? 'google'
+      : provider === 'anthropic'
+        ? 'anthropic'
+        : 'openai'
+    const model = typeof requestedModel === 'string' && requestedModel.trim()
+      ? requestedModel.trim()
+      : DEFAULT_MODEL_BY_PROVIDER[selectedProvider]
     const base64Pdf = Buffer.from(await file.arrayBuffer()).toString('base64')
     const filename = file.name || 'cv.pdf'
+
+    if (isDebugLoggingEnabled(debugLogging)) {
+      console.info('[AI Debug] PDF parse request', {
+        provider: selectedProvider,
+        model,
+        filename,
+        fileSizeBytes: file.size,
+        fileType: file.type,
+        prompt: CV_EXTRACTION_PROMPT,
+        document: '[PDF bytes omitted from debug log]'
+      })
+    }
+
     const text = selectedProvider === 'google'
-      ? await parseWithGoogle(base64Pdf, apiKey.trim())
-      : await parseWithOpenAI(base64Pdf, filename, apiKey.trim())
+      ? await parseWithGoogle(base64Pdf, apiKey.trim(), model)
+      : selectedProvider === 'anthropic'
+        ? await parseWithAnthropic(base64Pdf, apiKey.trim(), model)
+        : await parseWithOpenAI(base64Pdf, filename, apiKey.trim(), model)
 
     if (!text.trim()) {
       return Response.json({ error: 'The model did not return parsable CV data.' }, { status: 502 })

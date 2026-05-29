@@ -1,12 +1,12 @@
 'use client'
 
 import { CVData, Experience, Education, CVMetadata } from '@/lib/types'
-import { getSettings } from '@/lib/settings'
+import { getProviderApiKey, getProviderModel, getSettings } from '@/lib/settings'
 import { getActivePalette, resolveAppAccentColor } from '@/lib/displaySettings'
-import { useCompletion } from '@ai-sdk/react'
 import {
   SparklesIcon,
   ArrowUpTrayIcon,
+  EyeIcon,
   PlusIcon,
   TrashIcon,
   ArrowUpIcon,
@@ -28,6 +28,7 @@ interface CVFormProps {
   data: CVData
   onChange: (data: CVData) => void
   onClear: () => void
+  onPreview?: () => void
 }
 
 const COLOR_PRESETS = [
@@ -47,7 +48,7 @@ const COLOR_PRESETS = [
  * @param {CVFormProps} props - Component properties.
  * @returns {JSX.Element} The rendered form interface.
  */
-export default function CVForm({ data, onChange, onClear }: CVFormProps) {
+export default function CVForm({ data, onChange, onClear, onPreview }: CVFormProps) {
   const [activeTab, setActiveTab] = useState<'personal' | 'experience' | 'education' | 'skills' | 'design'>('personal')
   const [skillInput, setSkillInput] = useState('')
   const [enhancingField, setEnhancingField] = useState<{ type: string; id?: string } | null>(null)
@@ -60,37 +61,23 @@ export default function CVForm({ data, onChange, onClear }: CVFormProps) {
     ...COLOR_PRESETS.filter((color) => color.value.toLowerCase() !== appPalette.primary.toLowerCase())
   ]
 
-  const { complete, isLoading } = useCompletion({
-    api: '/api/enhance',
-    onError: (error: Error) => {
-      let msg = error.message
-      try {
-        const parsed = JSON.parse(error.message)
-        if (parsed.error) msg = parsed.error
-      } catch (e) {
-        console.error(e)
-      }
-      setErrorMsg(msg)
-      setEnhancingField(null)
-    },
-    onFinish: (_prompt: string, completion: string) => {
-      if (!enhancingField) return
-
-      if (enhancingField.type === 'summary') {
-        updatePersonalInfo('summary', completion)
-      } else if (enhancingField.type === 'experience' && enhancingField.id) {
-        updateExperience(enhancingField.id, 'description', completion)
-      }
-      setEnhancingField(null)
-      setErrorMsg(null)
-    }
-  })
+  const isEnhancing = enhancingField !== null
 
   const handleEnhance = async (text: string, type: string, id?: string) => {
     if (!text.trim()) return
     
     const settings = getSettings()
-    const apiKey = settings.provider === 'google' ? settings.googleKey : settings.openaiKey
+    const apiKey = getProviderApiKey(settings)
+    const model = getProviderModel(settings)
+    const refinePrompt = [
+      'Refine the following CV text.',
+      'Keep all original facts accurate. Improve clarity, professionalism, and impact.',
+      'Return only the refined text content.',
+      '',
+      `Text type: ${type}`,
+      'Text:',
+      text
+    ].join('\n')
     
     if (!apiKey) {
       setErrorMsg(`API key for ${settings.provider} is not configured. Please configure it in Settings.`)
@@ -99,13 +86,57 @@ export default function CVForm({ data, onChange, onClear }: CVFormProps) {
 
     setEnhancingField({ type, id })
     setErrorMsg(null)
-    await complete(text, { 
-      body: { 
-        type,
+    if (settings.debugLogging) {
+      console.info('[AI Debug][Client] CV refine request', {
         provider: settings.provider,
-        apiKey
-      } 
-    })
+        model,
+        type,
+        targetId: id || null,
+        prompt: refinePrompt
+      })
+    }
+    try {
+      const response = await fetch('/api/enhance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: refinePrompt,
+          type,
+          provider: settings.provider,
+          apiKey,
+          model,
+          debugLogging: settings.debugLogging
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        let errorMessage = errorText || 'Failed to refine text.'
+        try {
+          const parsed = JSON.parse(errorText) as { error?: string }
+          errorMessage = parsed.error || errorMessage
+        } catch {
+          // Keep the raw response text when the error body is not JSON.
+        }
+        throw new Error(errorMessage)
+      }
+
+      const refinedText = (await response.text()).trim()
+      if (!refinedText) return
+
+      if (type === 'summary') {
+        updatePersonalInfo('summary', refinedText)
+      } else if (type === 'experience' && id) {
+        updateExperience(id, 'description', refinedText)
+      }
+      setErrorMsg(null)
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : 'Failed to refine text.')
+    } finally {
+      setEnhancingField(null)
+    }
   }
 
   const handlePdfImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -119,19 +150,12 @@ export default function CVForm({ data, onChange, onClear }: CVFormProps) {
     }
 
     const settings = getSettings()
-    let provider = settings.provider
-    let apiKey = provider === 'google' ? settings.googleKey : settings.openaiKey
-
-    if (!apiKey && settings.openaiKey) {
-      provider = 'openai'
-      apiKey = settings.openaiKey
-    } else if (!apiKey && settings.googleKey) {
-      provider = 'google'
-      apiKey = settings.googleKey
-    }
+    const provider = settings.provider
+    const apiKey = getProviderApiKey(settings)
+    const model = getProviderModel(settings)
 
     if (!apiKey) {
-      setErrorMsg('Configure an OpenAI or Google Gemini API key in Settings before uploading a PDF CV.')
+      setErrorMsg('Configure an OpenAI, Google Gemini, or Anthropic API key in Settings before uploading a PDF CV.')
       return
     }
 
@@ -143,6 +167,8 @@ export default function CVForm({ data, onChange, onClear }: CVFormProps) {
       formData.append('file', file)
       formData.append('provider', provider)
       formData.append('apiKey', apiKey)
+      formData.append('model', model)
+      formData.append('debugLogging', String(settings.debugLogging))
 
       const response = await fetch('/api/parse-cv-pdf', {
         method: 'POST',
@@ -340,6 +366,15 @@ export default function CVForm({ data, onChange, onClear }: CVFormProps) {
             className="hidden"
             onChange={handlePdfImport}
           />
+          {onPreview && (
+            <button
+              onClick={onPreview}
+              className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-blue-200 dark:border-blue-900 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <EyeIcon className="h-3.5 w-3.5" />
+              Preview
+            </button>
+          )}
           <button
             onClick={() => pdfInputRef.current?.click()}
             disabled={isParsingPdf}
@@ -533,15 +568,15 @@ export default function CVForm({ data, onChange, onClear }: CVFormProps) {
                 </div>
                 <button
                   onClick={() => handleEnhance(data.personalInfo.summary, 'summary')}
-                  disabled={isLoading || !data.personalInfo.summary.trim()}
+                  disabled={isEnhancing || !data.personalInfo.summary.trim()}
                   className="flex items-center gap-1.5 text-xs bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-3 py-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-40 transition-all font-medium"
                 >
-                  {isLoading && enhancingField?.type === 'summary' ? (
+                  {isEnhancing && enhancingField?.type === 'summary' ? (
                     <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <SparklesIcon className="h-3.5 w-3.5" />
                   )}
-                  {isLoading && enhancingField?.type === 'summary' ? 'Enhancing...' : 'AI Refine'}
+                  {isEnhancing && enhancingField?.type === 'summary' ? 'Enhancing...' : 'AI Refine'}
                 </button>
               </div>
               <textarea
@@ -660,15 +695,15 @@ export default function CVForm({ data, onChange, onClear }: CVFormProps) {
                         <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Responsibilities & Achievements</label>
                         <button
                           onClick={() => handleEnhance(exp.description, 'experience', exp.id)}
-                          disabled={isLoading || !exp.description.trim()}
+                          disabled={isEnhancing || !exp.description.trim()}
                           className="flex items-center gap-1.5 text-xs bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-3 py-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-40 transition-all font-medium"
                         >
-                          {isLoading && enhancingField?.id === exp.id ? (
+                          {isEnhancing && enhancingField?.id === exp.id ? (
                             <ArrowPathIcon className="h-3 w-3 animate-spin" />
                           ) : (
                             <SparklesIcon className="h-3 w-3" />
                           )}
-                          {isLoading && enhancingField?.id === exp.id ? 'Enhancing...' : 'AI Professional Rewrite'}
+                          {isEnhancing && enhancingField?.id === exp.id ? 'Enhancing...' : 'AI Professional Rewrite'}
                         </button>
                       </div>
                       <textarea

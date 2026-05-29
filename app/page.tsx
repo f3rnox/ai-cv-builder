@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, ChangeEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
@@ -9,7 +9,6 @@ import {
   DocumentDuplicateIcon as Copy,
   PencilSquareIcon as Edit3,
   MagnifyingGlassIcon as Search,
-  ArrowUpTrayIcon as Upload,
   ClockIcon as Clock,
   Cog6ToothIcon as Settings,
   BriefcaseIcon as Briefcase,
@@ -123,45 +122,6 @@ export default function LibraryPage() {
     refreshList()
   }
 
-  const handleImportJSON = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const fileReader = new FileReader()
-    fileReader.readAsText(file, 'UTF-8')
-    fileReader.onload = (event) => {
-      try {
-        if (event.target?.result) {
-          const parsed = JSON.parse(event.target.result as string)
-          if (parsed.personalInfo && parsed.experience && parsed.education && parsed.skills) {
-            // Guarantee layout fields
-            if (!parsed.metadata) {
-              parsed.metadata = {
-                template: 'classic',
-                accentColor: getActivePalette().primary,
-                fontFamily: 'serif'
-              }
-            }
-            
-            const importTitle = parsed.personalInfo.name 
-              ? `${parsed.personalInfo.name}'s Imported CV` 
-              : 'Imported CV'
-            
-            createCV(importTitle, parsed)
-            refreshList()
-          } else {
-            alert('Invalid backup file format. Make sure it is a valid AI CV Builder JSON.')
-          }
-        }
-      } catch (err) {
-        console.error(err)
-        alert('Failed to parse backup file.')
-      }
-    }
-    // Reset file input value so same file can be imported again
-    e.target.value = ''
-  }
-
   // Filter CVs based on search query
   const filteredCvs = useMemo(() => cvs.filter((cv) => {
     const titleMatch = cv.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -209,21 +169,6 @@ export default function LibraryPage() {
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Import JSON */}
-            <label 
-              className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 border border-gray-200/60 dark:border-gray-800/80 px-4 py-2.5 rounded-xl cursor-pointer shadow-xs transition-colors"
-              title="Import CV Backup JSON"
-            >
-              <Upload width={14} height={14} />
-              Import Backup
-              <input 
-                type="file" 
-                accept=".json" 
-                onChange={handleImportJSON} 
-                className="hidden" 
-              />
-            </label>
-
             {/* Create New CV */}
             <button
               onClick={() => setShowCreateModal(true)}

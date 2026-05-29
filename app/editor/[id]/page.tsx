@@ -12,7 +12,6 @@ import {
   PrinterIcon as Printer,
   ArrowDownTrayIcon as Download,
   ArrowUpTrayIcon as Upload,
-  EyeIcon as Eye,
   ArrowLeftIcon as ArrowLeft,
   PencilSquareIcon as Edit3,
   CheckIcon as Check,
@@ -349,13 +348,6 @@ export default function EditorPage({ params }: EditorPageProps) {
         </div>
         
         <div className="flex items-center gap-2 sm:gap-4">
-          <button
-            onClick={() => setIsPreviewOpen(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/50 px-3.5 py-2 rounded-lg transition-colors"
-          >
-            <Eye width={14} height={14} />
-            Preview
-          </button>
           <ThemeSwitcher />
           <Link 
             href="/settings"
@@ -374,6 +366,7 @@ export default function EditorPage({ params }: EditorPageProps) {
             data={cv.data} 
             onChange={handleDataChange} 
             onClear={handleClear} 
+            onPreview={() => setIsPreviewOpen(true)}
           />
         </div>
       </main>
