@@ -1,0 +1,168 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - heading "AI CV Builder" [level=1] [ref=e4]:
+        - generic [ref=e5]: AI
+        - generic [ref=e6]: CV Builder
+      - generic [ref=e7]:
+        - button "Toggle theme" [ref=e8]:
+          - img [ref=e9]
+        - link "Settings" [ref=e11] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e12]
+          - text: Settings
+    - main [ref=e15]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - heading "Interactive Editor" [level=2] [ref=e20]
+            - paragraph [ref=e21]: Customize your CV content and styling
+          - generic [ref=e22]:
+            - button "Load Sample" [ref=e23]:
+              - img [ref=e24]
+              - text: Load Sample
+            - button "Reset" [ref=e26]:
+              - img [ref=e27]
+              - text: Reset
+        - generic [ref=e30]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: Profile Strength
+            - generic [ref=e34]: 100%
+          - generic [ref=e37]: Perfect!
+        - generic [ref=e38]:
+          - button "Personal" [ref=e39]:
+            - img [ref=e40]
+            - generic [ref=e43]: Personal
+          - button "Experience" [ref=e45]:
+            - img [ref=e46]
+            - generic [ref=e49]: Experience
+          - button "Education" [ref=e51]:
+            - img [ref=e52]
+            - generic [ref=e55]: Education
+          - button "Skills" [ref=e57]:
+            - img [ref=e58]
+            - generic [ref=e60]: Skills
+          - button "Design" [ref=e62]:
+            - img [ref=e63]
+            - generic [ref=e69]: Design
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - heading "Contact Information" [level=3] [ref=e73]
+            - paragraph [ref=e74]: Let employers know who you are and how to reach you
+          - generic [ref=e75]:
+            - generic [ref=e76]:
+              - generic [ref=e77]: Full Name
+              - textbox "e.g. Alex Rivera" [ref=e78]: Alex Rivera
+            - generic [ref=e79]:
+              - generic [ref=e80]: Professional Title
+              - textbox "e.g. Senior Software Engineer" [ref=e81]: Senior Full Stack Engineer
+            - generic [ref=e82]:
+              - generic [ref=e83]: Email Address
+              - textbox "e.g. alex@example.com" [ref=e84]: alex.rivera@example.com
+            - generic [ref=e85]:
+              - generic [ref=e86]: Phone Number
+              - textbox "e.g. +1 (555) 000-0000" [ref=e87]: +1 (555) 234-5678
+            - generic [ref=e88]:
+              - generic [ref=e89]: Location
+              - textbox "e.g. San Francisco, CA" [ref=e90]: San Francisco, CA
+          - generic [ref=e91]:
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - text: Professional Summary
+                - paragraph [ref=e94]: Briefly outline your key accomplishments and experience
+              - button "AI Refine" [ref=e95]:
+                - img [ref=e96]
+                - text: AI Refine
+            - textbox "Write a brief overview of your background, or write raw notes and click 'AI Refine' to generate a beautiful summary..." [ref=e99]: Passionate Full Stack Developer with over 6 years of experience building scalable web applications. Expert in React, TypeScript, Node.js, and Cloud Infrastructure. Proven track record of optimizing application performance by 40% and leading engineering teams to deliver high-impact products from scratch.
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - generic [ref=e102]:
+            - heading "Print & Export" [level=2] [ref=e103]
+            - paragraph [ref=e104]: Generate your final document layout
+          - generic [ref=e105]:
+            - button "Export Backup (JSON)" [ref=e106]:
+              - img [ref=e107]
+            - generic "Import Backup (JSON)" [ref=e110] [cursor=pointer]:
+              - img [ref=e111]
+            - button "Download PDF" [ref=e114]:
+              - img [ref=e115]
+              - text: Download PDF
+        - generic [ref=e119]:
+          - generic: Live A4 Viewport
+          - generic [ref=e121]:
+            - generic [ref=e122]:
+              - generic [ref=e123]:
+                - heading "Alex Rivera" [level=1] [ref=e124]
+                - paragraph [ref=e125]: Senior Full Stack Engineer
+              - generic [ref=e126]:
+                - heading "Contact" [level=2] [ref=e127]
+                - generic [ref=e128]:
+                  - img [ref=e129]
+                  - generic [ref=e132]: alex.rivera@example.com
+                - generic [ref=e133]:
+                  - img [ref=e134]
+                  - generic [ref=e136]: +1 (555) 234-5678
+                - generic [ref=e137]:
+                  - img [ref=e138]
+                  - generic [ref=e141]: San Francisco, CA
+              - generic [ref=e142]:
+                - heading "Expertise" [level=2] [ref=e143]
+                - generic [ref=e144]:
+                  - generic [ref=e145]: React
+                  - generic [ref=e146]: Next.js
+                  - generic [ref=e147]: TypeScript
+                  - generic [ref=e148]: Node.js
+                  - generic [ref=e149]: GraphQL
+                  - generic [ref=e150]: PostgreSQL
+                  - generic [ref=e151]: AWS
+                  - generic [ref=e152]: Docker
+                  - generic [ref=e153]: Tailwind CSS
+                  - generic [ref=e154]: System Architecture
+                  - generic [ref=e155]: Agile Methodology
+            - generic [ref=e156]:
+              - generic [ref=e157]:
+                - heading "Profile Summary" [level=2] [ref=e158]: Profile Summary
+                - paragraph [ref=e160]: Passionate Full Stack Developer with over 6 years of experience building scalable web applications. Expert in React, TypeScript, Node.js, and Cloud Infrastructure. Proven track record of optimizing application performance by 40% and leading engineering teams to deliver high-impact products from scratch.
+              - generic [ref=e161]:
+                - heading "Professional History" [level=2] [ref=e162]: Professional History
+                - generic [ref=e164]:
+                  - generic [ref=e165]:
+                    - generic [ref=e166]:
+                      - heading "Senior Software Engineer" [level=3] [ref=e167]
+                      - generic [ref=e168]: Mar 2022 – Present
+                    - generic [ref=e169]: Vanguard Systems
+                    - generic [ref=e170]:
+                      - generic [ref=e171]:
+                        - generic [ref=e172]: •
+                        - generic [ref=e173]: Spearheaded the migration of a legacy monolithic application to a serverless microservices architecture using Next.js and AWS, improving system response times by 35%.
+                      - generic [ref=e174]:
+                        - generic [ref=e175]: •
+                        - generic [ref=e176]: Mentored 5 junior developers, establishing clean code guidelines and automated CI/CD deployment pipelines.
+                      - generic [ref=e177]:
+                        - generic [ref=e178]: •
+                        - generic [ref=e179]: Designed and implemented a real-time collaborative workspace canvas utilizing React, TypeScript, and WebSockets.
+                  - generic [ref=e180]:
+                    - generic [ref=e181]:
+                      - heading "Full Stack Developer" [level=3] [ref=e182]
+                      - generic [ref=e183]: Jun 2019 – Feb 2022
+                    - generic [ref=e184]: InnovateTech Solutions
+                    - generic [ref=e185]:
+                      - generic [ref=e186]:
+                        - generic [ref=e187]: •
+                        - generic [ref=e188]: Built and shipped 10+ high-fidelity features for a high-traffic SaaS dashboard used by over 50k monthly active users.
+                      - generic [ref=e189]:
+                        - generic [ref=e190]: •
+                        - generic [ref=e191]: Optimized MongoDB database queries and implemented Redis caching, reducing API server loads by 50%.
+                      - generic [ref=e192]:
+                        - generic [ref=e193]: •
+                        - generic [ref=e194]: Collaborated closely with UI/UX designers to implement a customizable Tailwind-based design system.
+              - generic [ref=e195]:
+                - heading "Education" [level=2] [ref=e196]: Education
+                - generic [ref=e199]:
+                  - generic [ref=e200]:
+                    - heading "University of California, Berkeley" [level=3] [ref=e201]
+                    - generic [ref=e202]: B.S. in Computer Science
+                  - generic [ref=e203]: "2019"
+  - button "Open Next.js Dev Tools" [ref=e209] [cursor=pointer]:
+    - img [ref=e210]
+  - alert [ref=e213]
